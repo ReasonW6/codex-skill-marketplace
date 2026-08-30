@@ -1,0 +1,27 @@
+{
+  "name": "taste-skill-suite",
+  "version": "1.0.0",
+  "description": "Taste Skill frontend and visual-design skills packaged as a Codex plugin.",
+  "author": {
+    "name": "ReasonW6",
+    "url": "https://github.com/ReasonW6"
+  },
+  "homepage": "https://github.com/ReasonW6/codex-skill-marketplace",
+  "repository": "https://github.com/ReasonW6/codex-skill-marketplace",
+  "license": "MIT",
+  "keywords": ["design", "frontend", "ui", "ux", "codex", "skills"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Taste Skill Suite",
+    "shortDescription": "Anti-generic frontend and visual-design skills for Codex.",
+    "longDescription": "Thirteen Taste Skill workflows for frontend design, redesigns, image-to-code, visual directions, image-generation references, brand kits, and complete output.",
+    "developerName": "Leonxlnx / ReasonW6 packaging",
+    "category": "Design",
+    "capabilities": ["Frontend design", "Visual design"],
+    "defaultPrompt": [
+      "Design and build this interface with strong visual taste.",
+      "Audit this frontend and remove generic AI design patterns.",
+      "Create a premium visual direction for this product."
+    ]
+  }
+}

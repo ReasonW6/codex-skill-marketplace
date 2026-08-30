@@ -1,0 +1,32 @@
+{
+  "name": "reasonw6-plugins",
+  "interface": {
+    "displayName": "ReasonW6 Plugins"
+  },
+  "plugins": [
+    {
+      "name": "gsap-skills",
+      "source": {
+        "source": "local",
+        "path": "./plugins/gsap-skills"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Developer Tools"
+    },
+    {
+      "name": "taste-skill-suite",
+      "source": {
+        "source": "local",
+        "path": "./plugins/taste-skill-suite"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Design"
+    }
+  ]
+}
