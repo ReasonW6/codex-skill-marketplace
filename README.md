@@ -7,9 +7,32 @@
 
 本仓库只负责 Codex 插件化打包和分发。Skill 内容及版权归各自上游作者所有，详情见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。
 
-## 在 Codex 中添加市场
+## 在 Codex 桌面端添加市场（推荐）
 
-在 Codex 的集成终端或 PowerShell 中运行：
+打开 Codex 的插件目录，点击 **添加插件市场**，然后填写：
+
+| 输入框 | 填写内容 |
+| --- | --- |
+| 来源 | `ReasonW6/codex-skill-marketplace` |
+| Git 引用 | `main` |
+| 稀疏路径 | **留空，不要填写** |
+
+也可以在“来源”中填写完整 Git URL：
+
+```text
+https://github.com/ReasonW6/codex-skill-marketplace.git
+```
+
+> “稀疏路径”输入框里的 `plugins/codex` 只是 Codex 界面的占位示例，不是本市场的路径。这个仓库同时需要 `.agents/plugins/marketplace.json` 和 `plugins/` 目录，因此最简单可靠的方式是留空，让 Codex 获取完整仓库。
+
+点击 **添加市场**，然后重启 Codex 桌面应用。再次打开插件目录，在市场来源中选择 **ReasonW6 Plugins**，按需安装：
+
+- **GSAP Skills**
+- **Taste Skill Suite**
+
+## 使用命令行添加（备用）
+
+如果更习惯终端，可以在 Codex 的集成终端或 PowerShell 中运行：
 
 ```powershell
 codex plugin marketplace add ReasonW6/codex-skill-marketplace
@@ -21,10 +44,7 @@ codex plugin marketplace add ReasonW6/codex-skill-marketplace
 codex plugin marketplace list
 ```
 
-然后重启 Codex 桌面应用，打开插件目录，在市场来源中选择 **ReasonW6 Plugins**，按需安装：
-
-- **GSAP Skills**
-- **Taste Skill Suite**
+然后重启 Codex 桌面应用，在插件目录中选择 **ReasonW6 Plugins**。
 
 如果 GitHub 简写不可用，也可以使用完整地址：
 
