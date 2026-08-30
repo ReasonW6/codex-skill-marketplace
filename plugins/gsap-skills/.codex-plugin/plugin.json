@@ -1,6 +1,6 @@
 {
   "name": "gsap-skills",
-  "version": "1.0.0",
+  "version": "1.0.0+codex.20260830140007",
   "description": "Official GSAP AI skills packaged as a Codex plugin.",
   "author": {
     "name": "ReasonW6",
@@ -9,7 +9,13 @@
   "homepage": "https://github.com/ReasonW6/codex-skill-marketplace",
   "repository": "https://github.com/ReasonW6/codex-skill-marketplace",
   "license": "MIT",
-  "keywords": ["gsap", "animation", "frontend", "codex", "skills"],
+  "keywords": [
+    "gsap",
+    "animation",
+    "frontend",
+    "codex",
+    "skills"
+  ],
   "skills": "./skills/",
   "interface": {
     "displayName": "GSAP Skills",
@@ -17,7 +23,12 @@
     "longDescription": "Eight official GreenSock skills covering GSAP core, timelines, ScrollTrigger, plugins, React, other frameworks, utilities, and performance.",
     "developerName": "GreenSock / ReasonW6 packaging",
     "category": "Developer Tools",
-    "capabilities": ["Animation", "Frontend development"],
+    "capabilities": [
+      "Animation",
+      "Frontend development"
+    ],
+    "composerIcon": "./assets/gsap-icon-square.svg",
+    "logo": "./assets/gsap-icon-square.svg",
     "defaultPrompt": [
       "Build this interaction with GSAP and clean lifecycle handling.",
       "Create a polished GSAP timeline for this interface.",
