@@ -4,7 +4,7 @@
 
 - `gsap-skills`：来自 [GreenSock 官方 GSAP Skills](https://github.com/greensock/gsap-skills)，包含 8 个 GSAP 动画工程 Skill。
 - `taste-skill-suite`：来自 [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill)，包含 13 个前端与视觉设计 Skill。
-- `mattpocock-engineering`：来自 [Matt Pocock Skills](https://github.com/mattpocock/skills)，包含 18 个稳定工程 Skill 和 1 个共享依赖。
+- `mattpocock-engineering`：来自 [Matt Pocock Skills](https://github.com/mattpocock/skills)，包含 9 个工程 Skill 和 `grilling` 工作流。
 
 本仓库只负责 Codex 插件化打包和分发。Skill 内容及版权归各自上游作者所有，详情见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。
 
@@ -101,27 +101,18 @@ codex plugin marketplace remove reasonw6-plugins
 
 ### Matt Pocock Engineering
 
-- `ask-matt`
-- `grill-with-docs`
-- `grilling`（共享依赖）
-- `setup-matt-pocock-skills`
-- `wayfinder`
-- `to-spec`
-- `to-tickets`
-- `triage`
+- `grilling`
 - `prototype`
 - `research`
 - `domain-modeling`
 - `codebase-design`
-- `improve-codebase-architecture`
 - `tdd`
 - `diagnosing-bugs`
-- `implement`
 - `code-review`
 - `resolving-merge-conflicts`
 - `wizard`
 
-该插件按上游的稳定 `skills/engineering/` 分类完整打包，并补充这些流程共同调用的 `grilling`。未包含 `in-progress`、`deprecated`、`misc` 和无关的通用生产力 Skill。
+该插件打包上游 9 个不需要修改调用元数据的工程 Skill，并保留 `grilling` 工作流。未包含另外 9 个需要兼容性改动的工程 Skill，以及 `in-progress`、`deprecated`、`misc` 和其他通用生产力 Skill。
 
 ## 避免重复加载
 

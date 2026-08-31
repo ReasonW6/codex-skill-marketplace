@@ -1,6 +1,6 @@
 {
   "name": "mattpocock-engineering",
-  "version": "1.0.0+codex.20260831010839",
+  "version": "1.0.0+codex.20260831012311",
   "description": "Matt Pocock's stable engineering skills packaged as a Codex plugin.",
   "author": {
     "name": "ReasonW6",
@@ -21,15 +21,15 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Matt Pocock Engineering",
-    "shortDescription": "Composable engineering workflows for planning, coding, testing, and review.",
-    "longDescription": "Eighteen stable engineering skills from Matt Pocock plus their shared grilling dependency, covering planning, domain modeling, architecture, specifications, tickets, TDD, debugging, implementation, code review, merge-conflict resolution, research, prototypes, and human-run setup wizards.",
+    "shortDescription": "Composable workflows for design, testing, debugging, and review.",
+    "longDescription": "Nine unmodified engineering skills from Matt Pocock plus the grilling workflow, covering codebase design, domain modeling, TDD, debugging, code review, merge-conflict resolution, research, prototypes, and setup wizards.",
     "developerName": "Matt Pocock / ReasonW6 packaging",
     "category": "Developer Tools",
     "capabilities": [
-      "Software planning",
+      "Software design",
       "Architecture and domain modeling",
       "Testing and debugging",
-      "Implementation and code review"
+      "Code review and conflict resolution"
     ],
     "composerIcon": "./assets/mattpocock-engineering.svg",
     "logo": "./assets/mattpocock-engineering.svg",

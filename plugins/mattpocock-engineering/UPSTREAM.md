@@ -6,16 +6,13 @@
 - Commit date: 2026-08-24T15:19:57+01:00
 - License: MIT
 
-This plugin contains every skill under the upstream `skills/engineering/`
-directory and the shared `skills/productivity/grilling/` dependency.
-Experimental, deprecated, miscellaneous, and unrelated productivity skills are
-not included.
+This plugin contains nine skills from the upstream `skills/engineering/`
+directory plus `skills/productivity/grilling/`. Experimental, deprecated,
+miscellaneous, and other productivity skills are not included.
 
-Skill bodies and supporting files are unmodified. For Codex compatibility, the
-frontmatter-only `disable-model-invocation: true` field is removed from the nine
-upstream user-invoked skills because Codex's Skill and plugin validators do not
-accept that value consistently. This means Codex may also select those skills
-from their descriptions instead of requiring an explicit slash invocation.
-
-The extra `grilling` skill is required by `grill-with-docs`, `triage`,
-`wayfinder`, and `improve-codebase-architecture`.
+The nine upstream user-invoked engineering skills that required removal of the
+frontmatter field `disable-model-invocation: true` for Codex compatibility are
+intentionally not included in this package. The retained `code-review` skill
+has one local wording change so it no longer directs users to the removed
+`setup-matt-pocock-skills` skill; other retained skill bodies and supporting
+files are unmodified.

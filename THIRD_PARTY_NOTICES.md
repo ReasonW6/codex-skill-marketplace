@@ -28,8 +28,8 @@ The upstream license text is preserved at `plugins/taste-skill-suite/LICENSE`.
 - Packaged plugin: `plugins/mattpocock-engineering`
 - Snapshot commit: `6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`
 
-The plugin contains the upstream stable engineering collection plus its shared
-`grilling` dependency. The upstream license text is preserved at
+The plugin contains nine upstream engineering skills plus the `grilling`
+workflow. The upstream license text is preserved at
 `plugins/mattpocock-engineering/LICENSE`.
 
 ReasonW6 is the packager of this Codex marketplace and is not the original author of the redistributed skills.
