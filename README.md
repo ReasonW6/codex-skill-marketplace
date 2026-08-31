@@ -1,9 +1,10 @@
 # ReasonW6 Codex Skill Marketplace
 
-一个面向 Codex 的个人插件市场，把以下两套开源 Skill 集合整理成两个可独立安装的插件：
+一个面向 Codex 的个人插件市场，把以下三套开源 Skill 集合整理成三个可独立安装的插件：
 
 - `gsap-skills`：来自 [GreenSock 官方 GSAP Skills](https://github.com/greensock/gsap-skills)，包含 8 个 GSAP 动画工程 Skill。
 - `taste-skill-suite`：来自 [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill)，包含 13 个前端与视觉设计 Skill。
+- `mattpocock-engineering`：来自 [Matt Pocock Skills](https://github.com/mattpocock/skills)，包含 18 个稳定工程 Skill 和 1 个共享依赖。
 
 本仓库只负责 Codex 插件化打包和分发。Skill 内容及版权归各自上游作者所有，详情见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。
 
@@ -29,6 +30,7 @@ https://github.com/ReasonW6/codex-skill-marketplace.git
 
 - **GSAP Skills**
 - **Taste Skill Suite**
+- **Matt Pocock Engineering**
 
 ## 使用命令行添加（备用）
 
@@ -97,6 +99,30 @@ codex plugin marketplace remove reasonw6-plugins
 - `imagegen-frontend-mobile`
 - `brandkit`
 
+### Matt Pocock Engineering
+
+- `ask-matt`
+- `grill-with-docs`
+- `grilling`（共享依赖）
+- `setup-matt-pocock-skills`
+- `wayfinder`
+- `to-spec`
+- `to-tickets`
+- `triage`
+- `prototype`
+- `research`
+- `domain-modeling`
+- `codebase-design`
+- `improve-codebase-architecture`
+- `tdd`
+- `diagnosing-bugs`
+- `implement`
+- `code-review`
+- `resolving-merge-conflicts`
+- `wizard`
+
+该插件按上游的稳定 `skills/engineering/` 分类完整打包，并补充这些流程共同调用的 `grilling`。未包含 `in-progress`、`deprecated`、`misc` 和无关的通用生产力 Skill。
+
 ## 避免重复加载
 
 如果这些 Skill 已经单独安装在 `~/.codex/skills/`，建议先确认插件版本运行正常，再把重复的独立 Skill 移到备份目录。不要同时保留两个来源的同名 Skill，以免触发规则重复或来源难以判断。
@@ -110,7 +136,10 @@ codex plugin marketplace remove reasonw6-plugins
     ├── gsap-skills/
     │   ├── .codex-plugin/plugin.json
     │   └── skills/
-    └── taste-skill-suite/
+    ├── taste-skill-suite/
+    │   ├── .codex-plugin/plugin.json
+    │   └── skills/
+    └── mattpocock-engineering/
         ├── .codex-plugin/plugin.json
         └── skills/
 ```

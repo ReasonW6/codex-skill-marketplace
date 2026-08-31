@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Matt Pocock Engineering</title>
+  <desc id="desc">A dark blue engineering icon with code brackets and the initials MP.</desc>
+  <rect width="512" height="512" rx="112" fill="#0b1220"/>
+  <path d="M150 166 74 256l76 90" fill="none" stroke="#8dd8ff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="m362 166 76 90-76 90" fill="none" stroke="#8dd8ff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M213 348V170l43 72 43-72v178" fill="none" stroke="#fff4d6" stroke-width="28" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

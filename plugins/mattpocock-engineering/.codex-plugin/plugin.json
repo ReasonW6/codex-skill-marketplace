@@ -1,0 +1,42 @@
+{
+  "name": "mattpocock-engineering",
+  "version": "1.0.0+codex.20260831010839",
+  "description": "Matt Pocock's stable engineering skills packaged as a Codex plugin.",
+  "author": {
+    "name": "ReasonW6",
+    "url": "https://github.com/ReasonW6"
+  },
+  "homepage": "https://github.com/ReasonW6/codex-skill-marketplace",
+  "repository": "https://github.com/ReasonW6/codex-skill-marketplace",
+  "license": "MIT",
+  "keywords": [
+    "software-engineering",
+    "architecture",
+    "tdd",
+    "debugging",
+    "code-review",
+    "codex",
+    "skills"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Matt Pocock Engineering",
+    "shortDescription": "Composable engineering workflows for planning, coding, testing, and review.",
+    "longDescription": "Eighteen stable engineering skills from Matt Pocock plus their shared grilling dependency, covering planning, domain modeling, architecture, specifications, tickets, TDD, debugging, implementation, code review, merge-conflict resolution, research, prototypes, and human-run setup wizards.",
+    "developerName": "Matt Pocock / ReasonW6 packaging",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Software planning",
+      "Architecture and domain modeling",
+      "Testing and debugging",
+      "Implementation and code review"
+    ],
+    "composerIcon": "./assets/mattpocock-engineering.svg",
+    "logo": "./assets/mattpocock-engineering.svg",
+    "defaultPrompt": [
+      "Choose the right Matt Pocock engineering workflow for this task.",
+      "Implement this change with TDD, verification, and code review.",
+      "Diagnose this bug with a tight feedback loop before fixing it."
+    ]
+  }
+}
