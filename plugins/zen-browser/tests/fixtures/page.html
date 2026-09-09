@@ -1,0 +1,35 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><title>Zen 后台控制验收</title>
+<style>
+body{font:16px/1.6 system-ui,sans-serif;margin:40px;max-width:760px;color:#233b32;background:#f7f8f2} h1{font-size:28px} label{display:block;margin:14px 0} input,textarea,select,button{font:inherit;padding:7px;border:1px solid #bbcbbb;border-radius:5px} button{background:#356b58;color:white;cursor:pointer} #output{padding:14px;background:#e0eadd;min-height:30px} #covered{position:relative;width:160px;height:50px} #cover{position:absolute;inset:0;background:#2228} iframe{height:180px;width:500px;border:1px solid #ccc} #scrollbox{height:90px;overflow:auto} #scrollbox p{height:300px} #spacer{height:500px}
+</style>
+<h1>Zen 后台控制验收</h1>
+<p>前台输入与后台任务分开执行，检查选择、焦点、表单和截图。</p>
+<label>前台输入 <textarea id="foreground">选宝正在输入</textarea></label>
+<form id="form">
+<label>姓名 <input id="name" name="name" aria-label="姓名"></label>
+<label>密码 <input id="secret" type="password" value="never-print-this" autocomplete="off"></label>
+<label>城市 <select id="city" name="city"><option value="sh">上海</option><option value="hz">杭州</option><option value="bj" disabled>北京</option></select></label>
+<label><input id="agree" type="checkbox" name="agree">我已阅读</label>
+<label>留言 <textarea id="message" name="message"></textarea></label>
+<button id="submit" type="submit">提交测试</button>
+</form>
+<p id="output" role="status">等待提交</p>
+<button class="duplicate">重复</button> <button class="duplicate">重复</button>
+<button id="disabled" disabled>不可点击</button>
+<div id="covered"><button id="blocked">被遮挡</button><div id="cover"></div></div>
+<div id="editor" contenteditable="true" aria-label="富文本编辑器" role="textbox">初始文本</div>
+<div id="shadow"></div>
+<div id="scrollbox" aria-label="滚动区域"><p>内层滚动内容</p></div>
+<a id="next" href="/next">下一页</a> <a id="newtab" href="/next" target="_blank">新标签页链接</a>
+<input type="file" id="file" aria-label="上传文件">
+<p><button id="trusted">只接受真实事件</button><span id="trusted-result">尚无真实点击</span></p>
+<iframe id="frame" src="/frame" title="内嵌表单"></iframe>
+<div id="spacer"></div><p>页面底部</p>
+<script>
+window.testEvents=[];
+for(const type of ['input','change','submit','click']) document.addEventListener(type,e=>testEvents.push({type,id:e.target.id,trusted:e.isTrusted}));
+document.querySelector('#form').addEventListener('submit', e=>{e.preventDefault(); document.querySelector('#output').textContent=`已收到 ${document.querySelector('#name').value} / ${document.querySelector('#city').value} / ${document.querySelector('#agree').checked} / ${document.querySelector('#message').value}`;});
+const shadow=document.querySelector('#shadow').attachShadow({mode:'open'}); shadow.innerHTML='<label>影子输入 <input id="shadow-input" aria-label="影子输入"></label><button id="shadow-button">影子按钮</button><span id="shadow-output">尚未点击</span>';
+shadow.querySelector('button').onclick=()=>{shadow.querySelector('#shadow-output').textContent='影子按钮已点击';};
+document.querySelector('#trusted').onclick=e=>{if(e.isTrusted)document.querySelector('#trusted-result').textContent='已收到真实点击';};
+</script></html>

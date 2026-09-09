@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "zen_browser": {
+      "command": "node",
+      "args": ["server/mcp.mjs"],
+      "cwd": "."
+    }
+  }
+}

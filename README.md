@@ -1,12 +1,13 @@
 # ReasonW6 Codex Skill Marketplace
 
-一个面向 Codex 的个人插件市场，把以下三套开源 Skill 集合整理成三个可独立安装的插件：
+一个面向 Codex 的个人插件市场，提供可以独立安装的 Skill 集合与本地工具插件：
 
 - `gsap-skills`：来自 [GreenSock 官方 GSAP Skills](https://github.com/greensock/gsap-skills)，包含 8 个 GSAP 动画工程 Skill。
 - `taste-skill-suite`：来自 [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill)，包含 13 个前端与视觉设计 Skill。
 - `mattpocock-engineering`：来自 [Matt Pocock Skills](https://github.com/mattpocock/skills)，包含 9 个工程 Skill 和 `grilling` 工作流。
+- `zen-browser`：本仓库开发的 [Zen Browser Bridge](plugins/zen-browser/README.md)，通过浏览器扩展和本地 MCP 操作后台标签页，支持读取、填表、点击、导航和截图。
 
-本仓库只负责 Codex 插件化打包和分发。Skill 内容及版权归各自上游作者所有，详情见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。
+上游 Skill 内容及版权归各自作者所有，详情见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。`zen-browser` 为独立开发的 MIT 插件，其安装步骤、已验证能力和限制见插件目录。
 
 ## 在 Codex 桌面端添加市场（推荐）
 
@@ -31,6 +32,7 @@ https://github.com/ReasonW6/codex-skill-marketplace.git
 - **GSAP Skills**
 - **Taste Skill Suite**
 - **Matt Pocock Engineering**
+- **Zen Browser**（需同时安装配套 Zen 扩展和本机宿主，当前 XPI 为未签名开发包）
 
 ## 使用命令行添加（备用）
 
@@ -114,6 +116,10 @@ codex plugin marketplace remove reasonw6-plugins
 
 该插件打包上游 9 个不需要修改调用元数据的工程 Skill，并保留 `grilling` 工作流。未包含另外 9 个需要兼容性改动的工程 Skill，以及 `in-progress`、`deprecated`、`misc` 和其他通用生产力 Skill。
 
+### Zen Browser Bridge
+
+后台操作 Zen 的普通网页标签页，用户切回标签页时释放控制。支持普通及 React 表单、iframe、open shadow DOM 和后台截图。它是独立 MCP 接入，不提供官方 `@Browser` 私有入口或完整真实输入能力；长期安装浏览器扩展还需要 Mozilla 签名。详见 [安装说明](plugins/zen-browser/README.md)和[验证记录](plugins/zen-browser/docs/VALIDATION.md)。
+
 ## 避免重复加载
 
 如果这些 Skill 已经单独安装在 `~/.codex/skills/`，建议先确认插件版本运行正常，再把重复的独立 Skill 移到备份目录。不要同时保留两个来源的同名 Skill，以免触发规则重复或来源难以判断。
@@ -130,9 +136,16 @@ codex plugin marketplace remove reasonw6-plugins
     ├── taste-skill-suite/
     │   ├── .codex-plugin/plugin.json
     │   └── skills/
-    └── mattpocock-engineering/
+    ├── mattpocock-engineering/
+    │   ├── .codex-plugin/plugin.json
+    │   └── skills/
+    └── zen-browser/
         ├── .codex-plugin/plugin.json
-        └── skills/
+        ├── .mcp.json
+        ├── extension/
+        ├── server/
+        ├── scripts/
+        └── skills/zen-browser/
 ```
 
 Codex 插件与市场格式参考 [OpenAI 官方文档](https://developers.openai.com/plugins/build/plugins)。

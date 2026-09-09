@@ -1,0 +1,27 @@
+{
+  "name": "zen-browser",
+  "version": "0.1.0",
+  "description": "Control background Zen Browser tabs through a local MCP server and Firefox extension.",
+  "author": {
+    "name": "ReasonW6",
+    "url": "https://github.com/ReasonW6"
+  },
+  "homepage": "https://github.com/ReasonW6/codex-skill-marketplace/tree/main/plugins/zen-browser",
+  "repository": "https://github.com/ReasonW6/codex-skill-marketplace",
+  "license": "MIT",
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "Zen Browser",
+    "shortDescription": "在后台操作 Zen 标签页，保持前台浏览不受打扰。",
+    "longDescription": "通过 Firefox 扩展、Windows 原生通信和本地 MCP，读取网页、点击、填表、导航及截取后台标签页。用户切回标签页时自动释放控制。需要安装配套浏览器扩展与本机宿主，DOM 合成事件不等同于官方插件的全部真实输入能力。",
+    "developerName": "ReasonW6",
+    "category": "Productivity",
+    "capabilities": ["Read", "Write"],
+    "brandColor": "#356B58",
+    "composerIcon": "./extension/icon.svg",
+    "logo": "./extension/icon.svg",
+    "screenshots": ["./assets/bridge-popup.png", "./assets/background-validation.png"],
+    "defaultPrompt": ["在 Zen 后台打开网页并整理主要内容。", "在不切换前台标签页的情况下，帮我填写 Zen 网页表单。"]
+  },
+  "mcpServers": "./.mcp.json"
+}

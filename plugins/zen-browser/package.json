@@ -1,0 +1,23 @@
+{
+  "name": "@reasonw6/zen-browser",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local Codex MCP and Firefox WebExtension bridge for Zen Browser",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "node server/mcp.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node scripts/check.mjs",
+    "package": "node scripts/package.mjs",
+    "test:zen": "node tests/zen-e2e.mjs"
+  },
+  "devDependencies": {
+    "esbuild": "0.28.2",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  }
+}

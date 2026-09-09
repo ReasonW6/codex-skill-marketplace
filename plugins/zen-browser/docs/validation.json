@@ -1,0 +1,95 @@
+{
+  "pluginVersion": "0.1.0",
+  "validatedAt": "2026-09-09T04:47:51.366Z",
+  "environment": {
+    "os": "Windows",
+    "zen": "1.22b",
+    "gecko": "155.0.1",
+    "buildId": "20260904060728",
+    "node": "v24.13.1",
+    "mode": "headed-hidden",
+    "isolatedProfile": true
+  },
+  "unitTests": {
+    "passed": 19,
+    "failed": 0
+  },
+  "zenIntegration": {
+    "passed": true,
+    "checks": [
+      "actual Zen installed the temporary WebExtension",
+      "MCP stdio handshake succeeds",
+      "native messaging connects through registered host and authenticated pipe",
+      "all 16 tools are discoverable",
+      "foreground tab appears in the live inventory",
+      "foreground tab control is rejected",
+      "created tab is inactive",
+      "background snapshot contains names and masks passwords",
+      "fill, select, checkbox and form submission work in the background",
+      "foreground tab, DOM focus, text and selection are unchanged",
+      "foreground typing continues during background edits",
+      "open shadow DOM read, fill and click work",
+      "contenteditable fill is readable",
+      "stale snapshot refs cannot edit",
+      "ambiguous, disabled, covered, new-window and file targets return explicit errors",
+      "iframe is discoverable",
+      "cross-origin iframe background fill and click work",
+      "Enter form semantics work",
+      "nested scrolling works",
+      "inactive tab screenshot is a real PNG",
+      "screenshots and scrolling preserve foreground state",
+      "trusted-only controls are honestly identified as unsupported",
+      "navigation, history and reload work without activation",
+      "bounded wait reports timeout",
+      "new background tabs reuse the existing browser login session",
+      "React controlled inputs, state and submission work",
+      "another live MCP session cannot take the tab",
+      "owned background tab closes while foreground is retained",
+      "Windows foreground window never changes during background operations",
+      "real user tab activation blocks subsequent writes",
+      "switching away does not silently restore control",
+      "re-attached tabs cannot be closed as newly-created tabs",
+      "popup displays the actual bridge connection state",
+      "popup pause disconnects the native host",
+      "popup resume establishes a fresh native connection",
+      "reconnect changes the connection identity",
+      "pause and reconnect preserve tabs and release ownership"
+    ]
+  },
+  "windowsForeground": {
+    "passed": true,
+    "samples": 68,
+    "uniqueNonzeroWindows": 1
+  },
+  "testRegistrationRestored": true,
+  "extensionLint": {
+    "tool": "web-ext 10.6.0",
+    "errors": 0,
+    "warnings": 0,
+    "notices": 0
+  },
+  "scope": {
+    "trustedInput": false,
+    "officialBrowserUi": false,
+    "mozillaSigned": false,
+    "authenticodeSigned": false
+  },
+  "sourceHashNormalization": "UTF-8 text with LF line endings",
+  "sourceSha256": {
+    ".mcp.json": "eacb3fb7bba055e8a957ef7d94eec9b32f50df8bf6e44b451fe7d412a90671eb",
+    "server/mcp.mjs": "cdf293cd7f98d08bba7c74db954ffcc07f6f168cf1e6175b6ae6ceb9081dfbf1",
+    "server/client.mjs": "8da6b8eb4f4c730c28a4cad190075e13c01282c6bfcb2d7a1d289b78df3554b5",
+    "server/native-host.mjs": "7b1dc699267e410a90f41a2528fd66dc9c4bbf0e9a8549295612d01872a60e9b",
+    "server/wire.mjs": "e0031df88a35d451c908bbd28765cb4d7def7172c61ebb7b4b32641d3b9c4623",
+    "server/paths.mjs": "d45f55024ff8e18bb9e89bd4baa2c7143d35a2552440a97c24fd6f3e4fa09975",
+    "server/tools.mjs": "f05400177c9cdf7ac1db8a00dae6adbfd53df9f76d89c4e904b26fbbfec48a51",
+    "extension/manifest.json": "668d9f448af00b5bab29c6fe053127bfca9d846086f33e759520e5edd5304b2f",
+    "extension/background.js": "f891ad45c71014eacc5afc1fd04f84d665f9be1b562e63ec0b29482d0b507d13",
+    "extension/content.js": "10f14414f20db7b5247d6a50ca6c93e3586f65ec804e496040deb32a964c3486",
+    "extension/popup.html": "a26528372407bf377f682525a1f01d74db20a084970e4eb85517b1721e9741e7",
+    "extension/popup.css": "d9b5dd7912bd0f0f9c06d991f6fbd38b170effc61525b41ca7a624e3655a76d4",
+    "extension/popup.js": "98b04c899507173a2305a88503864937c2a637881aefebb6dd28fa3619ccbcd3",
+    "scripts/install-host.ps1": "95aea82d8b64c6b2924e67dade1ba66a85973950a3e9043c85b12f9857d41fbc",
+    "scripts/NativeLauncher.cs": "4c6238189a6aa999734b7c10a64f67a50784d68959190e2a592f811f37f3130a"
+  }
+}
