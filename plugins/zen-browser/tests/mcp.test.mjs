@@ -30,7 +30,7 @@ test('MCP initialization, tool discovery, protocol errors and notifications', as
   const initialized = await f.rpc('initialize', { protocolVersion: '2025-06-18' });
   assert.equal(initialized.result.protocolVersion, '2025-06-18');
   f.input.write('{"jsonrpc":"2.0","method":"notifications/initialized"}\n');
-  const list = await f.rpc('tools/list'); assert.equal(list.result.tools.length, 16);
+  const list = await f.rpc('tools/list'); assert.equal(list.result.tools.length, 19);
   assert.ok(list.result.tools.every(t => !('command' in t) && t.inputSchema.additionalProperties === false));
   assert.equal((await f.rpc('unknown')).error.code, -32601);
   assert.equal((await f.rpc('tools/call', { name: 'unknown' })).error.code, -32602);

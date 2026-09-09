@@ -23,6 +23,7 @@ body{font:16px/1.6 system-ui,sans-serif;margin:40px;max-width:760px;color:#233b3
 <a id="next" href="/next">下一页</a> <a id="newtab" href="/next" target="_blank">新标签页链接</a>
 <input type="file" id="file" aria-label="上传文件">
 <p><button id="trusted">只接受真实事件</button><span id="trusted-result">尚无真实点击</span></p>
+<div id="drag" draggable="true" style="padding:20px;background:#ddd3f2;width:240px">可以拖动的测试内容</div>
 <iframe id="frame" src="/frame" title="内嵌表单"></iframe>
 <div id="spacer"></div><p>页面底部</p>
 <script>
@@ -32,4 +33,5 @@ document.querySelector('#form').addEventListener('submit', e=>{e.preventDefault(
 const shadow=document.querySelector('#shadow').attachShadow({mode:'open'}); shadow.innerHTML='<label>影子输入 <input id="shadow-input" aria-label="影子输入"></label><button id="shadow-button">影子按钮</button><span id="shadow-output">尚未点击</span>';
 shadow.querySelector('button').onclick=()=>{shadow.querySelector('#shadow-output').textContent='影子按钮已点击';};
 document.querySelector('#trusted').onclick=e=>{if(e.isTrusted)document.querySelector('#trusted-result').textContent='已收到真实点击';};
+document.querySelector('#drag').addEventListener('dragstart',e=>{if(e.isTrusted)e.currentTarget.dataset.dragStarted='true';e.dataTransfer.setData('text/plain','local test drag');});document.addEventListener('dragover',e=>e.preventDefault());document.addEventListener('drop',e=>e.preventDefault());
 </script></html>

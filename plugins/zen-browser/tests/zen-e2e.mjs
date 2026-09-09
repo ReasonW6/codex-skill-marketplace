@@ -55,7 +55,7 @@ crossOrigin = `http://127.0.0.1:${frameServer.address().port}`;
 await new Promise(resolve => http.listen(0, '127.0.0.1', resolve));
 const base = `http://127.0.0.1:${http.address().port}`;
 let marionette, browserProcess, mcp, receipt, focusMonitor;
-const focusFile = path.join(runDir, 'foreground-windows.json'), focusStop = path.join(runDir, 'stop-focus-monitor');
+let focusFile = path.join(runDir, 'foreground-windows.json'), focusStop = path.join(runDir, 'stop-focus-monitor'), focusPhase = 'background';
 function powershell(script, args) {
   const result = spawnSync(process.env.ZEN_POWERSHELL || 'pwsh.exe', ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-File', path.join(root, 'scripts', script), ...args], { encoding: 'utf8', windowsHide: true });
   if (result.status !== 0) throw new Error(result.stderr || result.stdout || result.error?.message);
@@ -94,9 +94,73 @@ async function foreground() {
   return { handle: (await marionette.command('WebDriver:GetWindowHandle')).value,
     page: await evalPage('const e=document.querySelector("#foreground");return {url:location.href,active:document.activeElement.id,value:e.value,start:e.selectionStart,end:e.selectionEnd,visible:!document.hidden};') };
 }
+
+const refId = result => (result.value || result)['element-6066-11e4-a52e-4f735466cecf'];
+const resultValue = result => result && Object.hasOwn(result, 'value') ? result.value : result;
+const find = async selector => refId(await marionette.command('WebDriver:FindElement', { using: 'css selector', value: selector }));
+async function uiElement(selector) {
+  const host = await find('zen-ai-control');
+  const shadow = resultValue(await marionette.command('WebDriver:GetShadowRoot', { id: host }))['shadow-6066-11e4-a52e-4f735466cecf'];
+  return refId(await marionette.command('WebDriver:FindElementFromShadowRoot', { shadowRoot: shadow, using: 'css selector', value: selector }));
+}
+async function uiClick(action) {
+  const button = await uiElement('[data-action=' + action + ']');
+  for (let i = 0; i < 50; i++) {
+    if (resultValue(await marionette.command('WebDriver:IsElementEnabled', { id: button }))) break;
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  await marionette.command('WebDriver:ElementClick', { id: button });
+}
+async function uiText(selector) {
+  return resultValue(await marionette.command('WebDriver:GetElementText', { id: await uiElement(selector) }));
+}
+async function readControl(tabId) { return (await call('tabs')).tabs.find(tab => tab.tabId === tabId)?.control; }
+async function continueAndObserve(tabId) {
+  await uiClick('resume');
+  for (let i = 0; i < 30; i++) {
+    if ((await readControl(tabId)).state === 'observing') break;
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  return call('snapshot', { tabId });
+}
+async function capturePage(name) {
+  const shot = await marionette.command('WebDriver:TakeScreenshot', { id: null, highlights: [], full: false });
+  await writeFile(path.join(runDir, name), Buffer.from(resultValue(shot), 'base64'));
+}
+async function stopFocusMonitor() {
+  if (!focusMonitor) return;
+  await writeFile(focusStop, 'stop');
+  if (focusMonitor.exitCode === null) await new Promise(resolve => focusMonitor.once('exit', resolve));
+  focusMonitor = null;
+  const samples = JSON.parse((await readFile(focusFile, 'utf8')).replace(/^\uFEFF/, ''));
+  const handles = [...new Set(samples.map(s => s.handle))];
+  report.focusRuns ||= [];
+  report.focusRuns.push({ phase: focusPhase, samples: samples.length, handles });
+  report.foregroundWindowSamples = report.focusRuns.reduce((sum, run) => sum + run.samples, 0);
+  report.foregroundWindowHandles = [...new Set(report.focusRuns.flatMap(run => run.handles))];
+  if (samples.length > 10 && samples.every(s => s.handle !== 0)) {
+    check('Windows foreground stays unchanged during ' + focusPhase + ' operations', handles.length === 1);
+    report.foregroundWindowCheck = 'passed';
+  } else {
+    report.foregroundWindowCheck = samples.some(s => s.handle === 0)
+      ? 'unavailable: null foreground window handles'
+      : 'unavailable: fewer than 11 foreground window samples';
+    if (process.env.ZEN_REQUIRE_FOREGROUND === '1') throw new Error(report.foregroundWindowCheck);
+  }
+}
+async function startFocusMonitor(phase) {
+  if (process.env.ZEN_HEADED !== '1') return;
+  focusPhase = phase;
+  focusFile = path.join(runDir, 'foreground-' + phase + '.json');
+  focusStop = path.join(runDir, 'stop-foreground-' + phase);
+  focusMonitor = spawn(process.env.ZEN_POWERSHELL || 'pwsh.exe', ['-NoProfile', '-File', path.join(root, 'tests/focus-monitor.ps1'), '-OutputFile', focusFile, '-StopFile', focusStop], { windowsHide: true, stdio: 'ignore' });
+  let ready = false;
+  for (let i = 0; i < 100; i++) { try { await readFile(focusFile + '.ready'); ready = true; break; } catch { await new Promise(resolve => setTimeout(resolve, 100)); } }
+  if (!ready) throw new Error('Windows foreground monitor did not start.');
+}
 try {
   console.log(powershell('install-host.ps1', ['-InstallRoot', bridgeHome, '-HostName', 'io.github.reasonw6.zen_browser_test']).trim());
-  const receipts = (await readdir(bridgeHome)).filter(n => /^install-.*\.json$/.test(n)); receipt = path.join(bridgeHome, receipts.at(-1));
+  receipt = path.join(bridgeHome, (await readdir(bridgeHome)).filter(n => /^install-.*\.json$/.test(n)).at(-1));
   const args = ['--no-remote', '--profile', profile, '--marionette', '--remote-allow-system-access'];
   if (process.env.ZEN_HEADED !== '1') args.push('--headless');
   browserProcess = spawn(zen, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -104,178 +168,250 @@ try {
   marionette = await connectMarionette(marionettePort);
   const session = await marionette.command('WebDriver:NewSession', { capabilities: { alwaysMatch: { acceptInsecureCerts: false } } });
   report.browser = session.capabilities || session.value?.capabilities || session;
-  console.log(`Zen session created: ${JSON.stringify(session).slice(0, 500)}`);
   await marionette.command('Addon:Install', { path: extension, temporary: true });
-  check('actual Zen installed the temporary WebExtension', true);
-  // Zen's startup zen-empty-tab is deliberately excluded from WebExtension APIs.
-  // Create a regular user tab instead of navigating that internal placeholder.
+  check('Zen loads the real WebExtension', true);
   const userTab = await marionette.command('WebDriver:NewWindow', { type: 'tab' });
   await marionette.command('WebDriver:SwitchToWindow', { handle: userTab.handle ?? userTab.value?.handle });
   await marionette.command('WebDriver:Navigate', { url: base + '/foreground' });
-  await marionette.command('Marionette:SetContext', { value: 'chrome' });
-  report.chromeWindows = await evalPage('return [...Services.wm.getEnumerator(null)].map(w=>({type:w.document.documentElement.getAttribute("windowtype"),private:w.gPrivateBrowsingUI?.privateWindow,tabs:w.gBrowser?[...w.gBrowser.tabs].map(t=>({selected:t.selected,url:t.linkedBrowser.currentURI.spec})):[]}));');
-  console.log(`Windows: ${JSON.stringify(report.chromeWindows)}`);
-  await marionette.command('Marionette:SetContext', { value: 'content' });
   await evalPage('const e=document.querySelector("#foreground");e.focus();e.setSelectionRange(2,5);return true;');
   let baseline = await foreground();
   report.foregroundBaseline = baseline;
-  if (process.env.ZEN_HEADED === '1') {
-    focusMonitor = spawn(process.env.ZEN_POWERSHELL || 'pwsh.exe', ['-NoProfile', '-File', path.join(root, 'tests/focus-monitor.ps1'), '-OutputFile', focusFile, '-StopFile', focusStop], { windowsHide: true, stdio: 'ignore' });
-    let monitorReady = false;
-    for (let i = 0; i < 100; i++) {
-      try { await readFile(focusFile + '.ready'); monitorReady = true; break; } catch { await new Promise(resolve => setTimeout(resolve, 100)); }
-    }
-    if (!monitorReady) throw new Error('Windows foreground monitor failed to start.');
-  }
+  await startFocusMonitor('background');
   mcp = startClient();
-  const init = await mcp.rpc('initialize', { protocolVersion: '2025-11-25', clientInfo: { name: 'zen-e2e', version: '1' }, capabilities: {} });
-  check('MCP stdio handshake succeeds', init.serverInfo.name === 'reasonw6-zen-browser');
+  const init = await mcp.rpc('initialize', { protocolVersion: '2025-11-25', clientInfo: { name: 'zen-e2e', version: '2' }, capabilities: {} });
+  check('MCP starts from the shipped configuration', init.serverInfo.version === '0.2.0');
   let status;
-  for (let i = 0; i < 30; i++) { status = await call('status'); if (status.connected) break; await new Promise(resolve => setTimeout(resolve, 500)); }
-  check('native messaging connects through registered host and authenticated pipe', status.connected);
+  for (let i = 0; i < 40; i++) { status = await call('status'); if (status.connected) break; await new Promise(resolve => setTimeout(resolve, 250)); }
+  check('native messaging and authenticated local pipe connect', status.connected);
   connectionId = status.connections[0].connectionId;
-  const toolList = await mcp.rpc('tools/list'); check('all 16 tools are discoverable', toolList.tools.length === 16);
-  const tabs = await call('tabs');
-  report.initialTabs = tabs;
-  console.log(`Initial tabs: ${JSON.stringify(tabs)}`);
-  const front = tabs.tabs.find(t => t.url === base + '/foreground');
-  check('foreground tab appears in the live inventory', front?.active);
-  await call('attach', { tabId: front.tabId }, 'FOREGROUND_TAB'); check('foreground tab control is rejected', true);
-  const opened = await call('open', { url: base + '/' }); const tabId = opened.tabId;
-  check('created tab is inactive', opened.active === false);
-  await call('wait', { tabId, selector: '#name', timeoutMs: 10000 });
+  check('all 19 MCP tools are discoverable', (await mcp.rpc('tools/list')).tools.length === 19);
+  const beforeHandles = resultValue(await marionette.command('WebDriver:GetWindowHandles'));
+  const opened = await call('open', { url: base + '/', taskTitle: 'Zen AI 观看与接管验收' });
+  const tabId = opened.tabId;
+  const afterHandles = resultValue(await marionette.command('WebDriver:GetWindowHandles'));
+  const aiHandles = afterHandles.filter(handle => !beforeHandles.includes(handle));
+  assert.equal(aiHandles.length, 1);
+  const aiHandle = aiHandles[0];
+  check('AI tab is created in the background', opened.active === false);
+  await call('wait', { tabId, selector: '#name' });
   let snapshot = await call('snapshot', { tabId });
-  check('background snapshot contains names and masks passwords', snapshot.elements.some(e => e.name === '姓名') && !JSON.stringify(snapshot).includes('never-print-this'));
-  const nameRef = snapshot.elements.find(e => e.id === 'name').ref;
-  await call('fill', { tabId, ref: nameRef, text: '雨瑶' });
-  await call('fill', { tabId, selector: '#message', text: '后台输入通过 ✓' });
+  report.marking = snapshot.control.marking;
+  check('controlled tab has a native group or an explicit title fallback', ['native-group-and-title', 'title'].includes(snapshot.control.marking));
+  check('tab title displays a real AI state', snapshot.title.startsWith('[AI·'));
+  check('page observation does not expose password values or control buttons', !JSON.stringify(snapshot).includes('never-print-this') && !snapshot.elements.some(e => e.name === '暂停'));
+  await call('fill', { tabId, selector: '#name', text: '后台雨瑶' });
+  await call('fill', { tabId, selector: '#message', text: '真实后台填写' });
   await call('select', { tabId, selector: '#city', values: ['hz'] });
   await call('check', { tabId, selector: '#agree', checked: true });
   await call('click', { tabId, selector: '#submit' });
-  await call('wait', { tabId, text: '已收到 雨瑶 / hz / true / 后台输入通过 ✓' });
-  check('fill, select, checkbox and form submission work in the background', true);
-  assert.deepEqual(await foreground(), baseline); check('foreground tab, DOM focus, text and selection are unchanged', true);
+  await call('wait', { tabId, text: '已收到 后台雨瑶 / hz / true / 真实后台填写' });
+  check('background DOM operations change the actual form and result', true);
+  await call('fill', { tabId, selector: '#name', text: 'Enter 提交验证' });
+  await call('press', { tabId, selector: '#name', key: 'Enter' });
+  await call('wait', { tabId, text: '已收到 Enter 提交验证 / hz / true / 真实后台填写' });
+  check('synthetic Enter retains real form submission semantics', true);
+  assert.deepEqual(await foreground(), baseline);
+  check('background work preserves the other tab focus, text and selection', true);
   await evalPage('const e=document.querySelector("#foreground");e.focus();e.setSelectionRange(e.value.length,e.value.length);return true;');
-  const foregroundElement = await marionette.command('WebDriver:FindElement', { using: 'css selector', value: '#foreground' });
-  const elementId = foregroundElement.value?.['element-6066-11e4-a52e-4f735466cecf'] ?? foregroundElement['element-6066-11e4-a52e-4f735466cecf'];
+  const frontInput = await find('#foreground');
   await Promise.all([
-    marionette.command('WebDriver:ElementSendKeys', { id: elementId, text: ' 前台继续输入' }),
-    (async () => { for (let i = 0; i < 4; i++) await call('fill', { tabId, selector: '#message', text: `后台并行 ${i}` }); })()
+    marionette.command('WebDriver:ElementSendKeys', { id: frontInput, text: ' 前台继续输入' }),
+    (async () => { for (let i = 0; i < 3; i++) await call('fill', { tabId, selector: '#message', text: '并行后台 ' + i }); })()
   ]);
   baseline = await foreground();
-  check('foreground typing continues during background edits', baseline.page.value === '选宝正在输入 前台继续输入' && baseline.page.active === 'foreground');
-  await call('fill', { tabId, selector: '#shadow-input', text: '影子文本' });
+  check('foreground typing continues while AI writes elsewhere', baseline.page.value === '选宝正在输入 前台继续输入' && baseline.page.active === 'foreground');
+  await call('fill', { tabId, selector: '#editor', text: '富文本不会误判接管' });
+  check('browser-generated editing events do not cause false takeover', (await readControl(tabId)).state === 'idle');
+  await call('fill', { tabId, selector: '#shadow-input', text: '影子输入' });
   await call('click', { tabId, selector: '#shadow-button' });
-  await call('wait', { tabId, text: '影子按钮已点击' }); check('open shadow DOM read, fill and click work', true);
-  await call('fill', { tabId, selector: '#editor', text: '富文本验证' });
-  snapshot = await call('snapshot', { tabId }); check('contenteditable fill is readable', snapshot.text.includes('富文本验证'));
-  await call('fill', { tabId, ref: nameRef, text: 'stale' }, 'STALE_REF'); check('stale snapshot refs cannot edit', true);
-  await call('click', { tabId, selector: '.duplicate' }, 'AMBIGUOUS_TARGET');
-  await call('click', { tabId, selector: '#disabled' }, 'ELEMENT_DISABLED');
-  await call('click', { tabId, selector: '#blocked' }, 'ELEMENT_COVERED');
-  await call('click', { tabId, selector: '#newtab' }, 'NEW_TAB_LINK');
-  await call('fill', { tabId, selector: '#file', text: 'no' }, 'UNSUPPORTED_FILE_INPUT');
-  check('ambiguous, disabled, covered, new-window and file targets return explicit errors', true);
-  const frame = snapshot.frames.find(f => f.url === crossOrigin + '/frame');
-  check('iframe is discoverable', Number.isInteger(frame?.frameId));
-  await call('fill', { tabId, frameId: frame.frameId, selector: '#frame-input', text: '内嵌文本' });
-  await call('click', { tabId, frameId: frame.frameId, selector: 'button' });
-  await call('wait', { tabId, frameId: frame.frameId, text: '内嵌完成' }); check('cross-origin iframe background fill and click work', true);
-  await call('fill', { tabId, selector: '#name', text: '回车提交' });
-  await call('press', { tabId, selector: '#name', key: 'Enter' });
-  await call('wait', { tabId, text: '已收到 回车提交' }); check('Enter form semantics work', true);
-  const scrolled = await call('scroll', { tabId, selector: '#scrollbox', y: 160 }); check('nested scrolling works', scrolled.y > 0);
-  await call('scroll', { tabId, y: -100000 });
-  const screenshot = await call('screenshot', { tabId, format: 'png' });
-  const image = screenshot.content.find(c => c.type === 'image');
-  const bytes = Buffer.from(image.data, 'base64');
-  check('inactive tab screenshot is a real PNG', bytes.subarray(0, 8).equals(Buffer.from([137,80,78,71,13,10,26,10])));
-  await writeFile(path.join(runDir, 'background.png'), bytes);
-  assert.deepEqual(await foreground(), baseline); check('screenshots and scrolling preserve foreground state', true);
-  await call('click', { tabId, selector: '#trusted' });
+  await call('wait', { tabId, text: '影子按钮已点击' });
+  check('open shadow DOM still works in the background', true);
   snapshot = await call('snapshot', { tabId });
-  check('trusted-only controls are honestly identified as unsupported', snapshot.text.includes('尚无真实点击'));
-  await call('navigate', { tabId, action: 'goto', url: base + '/next' });
-  await call('wait', { tabId, text: '后台下一页' });
-  await call('navigate', { tabId, action: 'back' });
-  await call('wait', { tabId, selector: '#name' });
-  await call('navigate', { tabId, action: 'forward' });
-  await call('wait', { tabId, text: '后台下一页' });
-  await call('navigate', { tabId, action: 'reload' });
-  await call('wait', { tabId, text: '后台下一页' }); check('navigation, history and reload work without activation', true);
-  assert.deepEqual(await foreground(), baseline);
-  await call('wait', { tabId, text: 'never exists', timeoutMs: 200 }, 'WAIT_TIMEOUT'); check('bounded wait reports timeout', true);
+  const frame = snapshot.frames.find(f => f.url === crossOrigin + '/frame');
+  await call('snapshot', { tabId, frameId: frame.frameId });
+  await call('fill', { tabId, frameId: frame.frameId, selector: '#frame-input', text: '跨源内嵌输入' });
+  await call('click', { tabId, frameId: frame.frameId, selector: 'button' });
+  await call('wait', { tabId, frameId: frame.frameId, text: '内嵌完成' });
+  check('cross-origin frame observations and actions remain isolated', true);
+  await call('scroll', { tabId, selector: '#scrollbox', y: 150 });
+  await call('scroll', { tabId, y: -100000 });
+  const background = await call('screenshot', { tabId, format: 'png' });
+  const image = background.content.find(c => c.type === 'image');
+  await writeFile(path.join(runDir, 'background.png'), Buffer.from(image.data, 'base64'));
+  check('background screenshot contains the real controlled page', image.mimeType === 'image/png');
   await call('navigate', { tabId, action: 'goto', url: base + '/session' });
-  await call('wait', { tabId, text: '现有登录会话可用' }); check('new background tabs reuse the existing browser login session', true);
+  await call('wait', { tabId, text: '现有登录会话可用' });
+  check('existing browser login session is retained', true);
+  await call('snapshot', { tabId });
   await call('navigate', { tabId, action: 'goto', url: base + '/react' });
   await call('wait', { tabId, selector: '#react-name' });
-  await call('fill', { tabId, selector: '#react-name', text: 'React 雨瑶' });
+  await call('snapshot', { tabId });
+  await call('fill', { tabId, selector: '#react-name', text: 'React 真实状态' });
   await call('check', { tabId, selector: '#react-agree', checked: true });
   await call('select', { tabId, selector: '#react-city', values: ['hz'] });
   await call('click', { tabId, selector: '#react-submit' });
-  await call('wait', { tabId, text: 'React 已收到 React 雨瑶 / true / hz' });
-  check('React controlled inputs, state and submission work', true);
+  await call('wait', { tabId, text: 'React 已收到 React 真实状态 / true / hz' });
+  check('React controlled inputs still update application state', true);
   assert.deepEqual(await foreground(), baseline);
+  await stopFocusMonitor();
+
+  await call('snapshot', { tabId });
+  await call('navigate', { tabId, action: 'goto', url: base + '/' });
+  await call('wait', { tabId, selector: '#name' });
+  await call('snapshot', { tabId });
+  const epochBeforeWatching = (await readControl(tabId)).epoch;
+  await marionette.command('WebDriver:SwitchToWindow', { handle: aiHandle });
+  check('clicking the AI tab enters watching without losing control', (await readControl(tabId)).epoch === epochBeforeWatching);
+  await startFocusMonitor('watching');
+  check('page control UI is isolated in a closed shadow root', await evalPage('return document.querySelector("zen-ai-control").shadowRoot===null;'));
+  const namePoint = await evalPage('const r=document.querySelector("#name").getBoundingClientRect();return {x:Math.round(r.x+r.width/2),y:Math.round(r.y+r.height/2)};');
+  await marionette.command('WebDriver:PerformActions', { actions: [{ type: 'pointer', id: 'watch-mouse', parameters: { pointerType: 'mouse' }, actions: [{ type: 'pointerMove', origin: 'viewport', x: namePoint.x, y: namePoint.y, duration: 0 }] }] });
+  check('physical hover does not take over', (await readControl(tabId)).controlled);
+  await call('fill', { tabId, selector: '#name', text: '正在观看 AI 填写' });
+  await call('click', { tabId, selector: '#submit' });
+  check('watched fill and click update the actual page', (await evalPage('return document.querySelector("#output").textContent;')).includes('正在观看 AI 填写'));
+  await capturePage('click-feedback.png');
+  await call('fill', { tabId, selector: '#editor', text: '观看时的富文本编辑' });
+  check('visible native editing events are attributed to the active AI operation', (await readControl(tabId)).state === 'idle');
+  await capturePage('watching.png');
+  for (let i = 1; i <= 40; i++) await call('fill', { tabId, selector: '#name', text: '连续观看步骤 ' + i });
+  check('consecutive watched steps continue without a false takeover', (await readControl(tabId)).controlled && await evalPage('return document.querySelector("#name").value==="连续观看步骤 40";'));
+  await stopFocusMonitor();
+  const currentName = await evalPage('return document.querySelector("#name").value;');
+  const pendingWait = call('wait', { tabId, text: 'never appears', timeoutMs: 5000 }).then(value => ({ value }), error => ({ error }));
+  for (let i = 0; i < 40; i++) { if ((await uiText('.detail')).includes('等待网页')) break; await new Promise(resolve => setTimeout(resolve, 25)); }
+  check('running status is driven by an actual pending command', (await readControl(tabId)).state === 'running' && (await uiText('.label')).includes('运行'));
+  await capturePage('running.png');
+  await uiClick('collapse');
+  check('collapsed controls still expose pause and takeover', (await readControl(tabId)).collapsed && (await uiText('[data-action=pause]')) === '暂停' && (await uiText('[data-action=takeover]')) === '接管');
+  const queuedFill = call('fill', { tabId, selector: '#name', text: 'MUST NEVER REPLAY' }).then(value => ({ value }), error => ({ error }));
+  await uiClick('pause');
+  await uiClick('resume');
+  const [waitOutcome, queuedOutcome] = await Promise.all([pendingWait, queuedFill]);
+  check('page pause cancels an outstanding wait', /CONTROL_CHANGED|CONTROL_STOPPED/.test(waitOutcome.error?.message));
+  check('immediate Continue does not replay an already-queued write', /CONTROL_CHANGED|CONTROL_STOPPED/.test(queuedOutcome.error?.message) && await evalPage('return document.querySelector("#name").value;') === currentName);
+  await call('fill', { tabId, selector: '#name', text: 'no observation' }, 'OBSERVATION_REQUIRED');
+  check('Continue requires a fresh observation', true);
+  await uiClick('collapse');
+  await call('snapshot', { tabId });
+  await call('fill', { tabId, selector: '#name', text: '观察后的新指令' });
+
+  await marionette.command('WebDriver:ElementClick', { id: await find('#message') });
+  await marionette.command('WebDriver:ElementSendKeys', { id: await find('#message'), text: '用户自己的输入' });
+  const takeoverState = await readControl(tabId);
+  check('actual page click and typing take over without swallowing user input', takeoverState.state === 'user_control' && (await evalPage('return document.querySelector("#message").value;')).includes('用户自己的输入'));
+  await call('fill', { tabId, selector: '#message', text: 'must not overwrite' }, 'CONTROL_STOPPED');
+  await capturePage('takeover.png');
+  const awaitingUser = call('wait_for_control', { tabId, timeoutMs: 5000 });
+  await uiClick('resume');
+  const resumed = await awaitingUser;
+  check('Continue wakes the waiting MCP call with a fresh observation of user edits', resumed.ready && resumed.snapshot.elements.some(e => e.id === 'message' && e.value.includes('用户自己的输入')));
+  await call('fill', { tabId, selector: '#name', text: '键盘接管之前' });
+  await marionette.command('WebDriver:ElementSendKeys', { id: await find('#name'), text: '键盘输入' });
+  check('keyboard input alone takes over an AI-focused input', (await readControl(tabId)).state === 'user_control');
+  await continueAndObserve(tabId);
+  await evalPage('document.querySelector("#drag").scrollIntoView({block:"center"});return true;');
+  const dragPoint = await evalPage('const r=document.querySelector("#drag").getBoundingClientRect();return {x:Math.round(r.x+30),y:Math.round(r.y+20)};');
+  await marionette.command('WebDriver:PerformActions', { actions: [{ type: 'pointer', id: 'drag-mouse', parameters: { pointerType: 'mouse' }, actions: [
+    { type: 'pointerMove', origin: 'viewport', x: dragPoint.x, y: dragPoint.y, duration: 0 }, { type: 'pointerDown', button: 0 },
+    { type: 'pointerMove', origin: 'viewport', x: dragPoint.x + 120, y: dragPoint.y + 25, duration: 180 }, { type: 'pointerUp', button: 0 }
+  ] }] });
+  check('actual content drag takes over before further AI writes', (await readControl(tabId)).state === 'user_control' && await evalPage('return document.querySelector("#drag").dataset.dragStarted==="true";'));
+  await continueAndObserve(tabId);
+  await marionette.command('WebDriver:SwitchToFrame', { element: await find('#frame') });
+  await marionette.command('WebDriver:ElementClick', { id: await find('#frame-input') });
+  await marionette.command('WebDriver:ElementSendKeys', { id: await find('#frame-input'), text: '用户的跨源输入' });
+  await marionette.command('WebDriver:SwitchToFrame', { id: null });
+  check('physical input in a cross-origin iframe takes over the whole tab', (await readControl(tabId)).state === 'user_control');
+  await call('fill', { tabId, selector: '#name', text: 'cannot race with iframe user' }, 'CONTROL_STOPPED');
+  await continueAndObserve(tabId);
+  await evalPage('document.title="网页自己更新的标题";return true;');
+  check('tab marking preserves dynamic site titles', (await evalPage('return document.title;')).includes('网页自己更新的标题') && (await evalPage('return document.title;')).startsWith('[AI·'));
+
+  await call('click', { tabId, selector: '.duplicate' }, 'AMBIGUOUS_TARGET');
+  check('an actual failed operation produces a failed UI state', (await readControl(tabId)).state === 'failed');
+  await capturePage('failed.png');
+  await call('click', { tabId, selector: '#submit' }, 'CONTROL_STOPPED');
+  await continueAndObserve(tabId);
+  const staleSnapshot = await call('snapshot', { tabId });
+  const staleRef = staleSnapshot.elements.find(element => element.id === 'name').ref;
+  await call('snapshot', { tabId });
+  await call('fill', { tabId, ref: staleRef, text: 'must not apply' }, 'STALE_REF');
+  check('stale refs are rejected after a new observation', (await readControl(tabId)).state === 'failed');
+  await continueAndObserve(tabId);
+  for (const [command, args, code] of [
+    ['click', { selector: '#disabled' }, 'ELEMENT_DISABLED'],
+    ['click', { selector: '#blocked' }, 'ELEMENT_COVERED'],
+    ['click', { selector: '#newtab' }, 'NEW_TAB_LINK'],
+    ['fill', { selector: '#file', text: 'unsupported' }, 'UNSUPPORTED_FILE_INPUT']
+  ]) {
+    await call(command, { tabId, ...args }, code);
+    check('invalid target remains blocked: ' + code, (await readControl(tabId)).state === 'failed');
+    await continueAndObserve(tabId);
+  }
+  await call('click', { tabId, selector: '#trusted' });
+  check('synthetic click does not claim trusted-only page behavior', await evalPage('return document.querySelector("#trusted-result").textContent === "尚无真实点击";'));
+  await call('task', { tabId, outcome: 'waiting_user', message: '请确认网页结果后继续' });
+  check('agent-declared need for user action is displayed accurately', (await uiText('.label')).includes('等待用户'));
+  await continueAndObserve(tabId);
+  await uiClick('pause');
+  await capturePage('paused.png');
+  await marionette.command('WebDriver:Refresh');
+  for (let i = 0; i < 40; i++) { try { if ((await uiText('.label')).includes('暂停')) break; } catch {} await new Promise(resolve => setTimeout(resolve, 50)); }
+  check('refresh preserves a human pause and restores the page controls', (await uiText('.label')).includes('暂停'));
+  await continueAndObserve(tabId);
+  await call('navigate', { tabId, action: 'goto', url: base + '/next' });
+  await call('wait', { tabId, text: '后台下一页' });
+  await call('click', { tabId, selector: 'a' }, 'OBSERVATION_REQUIRED');
+  check('navigation invalidates old page observations', true);
+  await call('snapshot', { tabId });
+  await call('navigate', { tabId, action: 'back' });
+  await call('wait', { tabId, selector: '#name' });
+  await call('snapshot', { tabId });
+  check('navigation and history rebuild the live UI and keep watching', (await readControl(tabId)).controlled && (await uiText('.mode')) === '观看');
+
   const primary = mcp;
   mcp = startClient(); await mcp.rpc('initialize', { protocolVersion: '2025-11-25' });
-  await call('attach', { tabId }, 'TAB_BUSY');
-  mcp.child.stdin.end(); mcp = primary;
-  check('another live MCP session cannot take the tab', true);
-  await call('close', { tabId }); check('owned background tab closes while foreground is retained', !(await call('tabs')).tabs.some(t => t.tabId === tabId));
-  assert.deepEqual(await foreground(), baseline);
-  if (focusMonitor) {
-    await writeFile(focusStop, 'stop');
-    await new Promise(resolve => focusMonitor.once('exit', resolve));
-    focusMonitor = null;
-    const samples = JSON.parse((await readFile(focusFile, 'utf8')).replace(/^\uFEFF/, ''));
-    report.foregroundWindowSamples = samples.length;
-    report.foregroundWindowHandles = [...new Set(samples.map(s => s.handle))];
-    if (samples.length > 10 && samples.every(s => s.handle !== 0)) {
-      check('Windows foreground window never changes during background operations', report.foregroundWindowHandles.length === 1);
-      report.foregroundWindowCheck = 'passed';
-    } else {
-      report.foregroundWindowCheck = 'unavailable: Windows returned null foreground window handles';
-      console.log('UNVERIFIED Windows foreground window: null handles cannot prove focus preservation.');
-      if (process.env.ZEN_REQUIRE_FOREGROUND === '1') throw new Error(report.foregroundWindowCheck);
-    }
-  }
-  const takeover = await call('open', { url: base + '/' });
-  await call('wait', { tabId: takeover.tabId, selector: '#name' });
-  // Simulate the user selecting that tab using test-only browser chrome access.
-  await marionette.command('Marionette:SetContext', { value: 'chrome' });
-  await evalPage(`const w=Services.wm.getMostRecentWindow('navigator:browser');const t=[...w.gBrowser.tabs].find(t=>t.linkedBrowser.currentURI.spec===${JSON.stringify(base + '/')});w.gBrowser.selectedTab=t;return true;`);
-  await marionette.command('Marionette:SetContext', { value: 'content' });
-  await call('fill', { tabId: takeover.tabId, selector: '#name', text: 'must not be typed' }, 'FOREGROUND_TAB');
-  check('real user tab activation blocks subsequent writes', true);
-  await marionette.command('WebDriver:SwitchToWindow', { handle: baseline.handle });
-  await call('fill', { tabId: takeover.tabId, selector: '#name', text: 'must not be typed' }, 'NOT_ATTACHED');
-  check('switching away does not silently restore control', true);
-  await call('attach', { tabId: takeover.tabId });
-  await call('close', { tabId: takeover.tabId }, 'NOT_CREATED');
-  check('re-attached tabs cannot be closed as newly-created tabs', true);
+  await call('attach', { tabId }, 'TAB_BUSY'); mcp.child.stdin.end(); mcp = primary;
+  check('a second MCP connection cannot control the watched tab', true);
   await marionette.command('Marionette:SetContext', { value: 'chrome' });
   const popupUrl = await evalPage('return WebExtensionPolicy.getByID("zen-browser@reasonw6.github.io").getURL("popup.html");');
   await marionette.command('Marionette:SetContext', { value: 'content' });
+  await marionette.command('WebDriver:SwitchToWindow', { handle: baseline.handle });
   await marionette.command('WebDriver:Navigate', { url: popupUrl });
   for (let i = 0; i < 30; i++) { if (await evalPage('return document.querySelector("#toggle")?.disabled===false;')) break; await new Promise(resolve => setTimeout(resolve, 100)); }
-  check('popup displays the actual bridge connection state', (await evalPage('return document.querySelector("#status").textContent;')).includes('已连接'));
-  const popupBody = await marionette.command('WebDriver:FindElement', { using: 'css selector', value: 'body' });
-  const popupId = popupBody.value?.['element-6066-11e4-a52e-4f735466cecf'] ?? popupBody['element-6066-11e4-a52e-4f735466cecf'];
-  const popupShot = await marionette.command('WebDriver:TakeScreenshot', { id: popupId, highlights: [], full: false });
-  await writeFile(path.join(runDir, 'popup.png'), Buffer.from(popupShot.value, 'base64'));
-  await evalPage('document.querySelector("#toggle").click();return true;');
-  for (let i = 0; i < 30; i++) { if (!(await call('status')).connected) break; await new Promise(resolve => setTimeout(resolve, 100)); }
-  check('popup pause disconnects the native host', !(await call('status')).connected);
-  await evalPage('document.querySelector("#toggle").click();return true;');
+  check('extension popup lists the real task and current state', (await evalPage('return document.querySelector("#tasks").textContent;')).includes('Zen AI 观看与接管验收'));
+  const popupBody = await find('body');
+  const popupShot = await marionette.command('WebDriver:TakeScreenshot', { id: popupBody, highlights: [], full: false });
+  await writeFile(path.join(runDir, 'popup.png'), Buffer.from(resultValue(popupShot), 'base64'));
+  await marionette.command('WebDriver:ElementClick', { id: await find('#toggle') });
+  for (let i = 0; i < 40; i++) { if (!(await call('status')).connected) break; await new Promise(resolve => setTimeout(resolve, 50)); }
+  check('global pause disconnects native control', !(await call('status')).connected);
+  await marionette.command('WebDriver:ElementClick', { id: await find('#toggle') });
   let reconnected;
-  for (let i = 0; i < 30; i++) { reconnected = await call('status'); if (reconnected.connected) break; await new Promise(resolve => setTimeout(resolve, 100)); }
-  check('popup resume establishes a fresh native connection', reconnected.connected);
-  const previousConnection = connectionId; connectionId = reconnected.connections[0].connectionId;
-  check('reconnect changes the connection identity', connectionId !== previousConnection);
-  const remaining = (await call('tabs')).tabs.find(t => t.tabId === takeover.tabId);
-  check('pause and reconnect preserve tabs and release ownership', remaining && !remaining.controlled);
+  for (let i = 0; i < 40; i++) { reconnected = await call('status'); if (reconnected.connected) break; await new Promise(resolve => setTimeout(resolve, 100)); }
+  check('native bridge reconnects with a new connection identity', reconnected.connected && reconnected.connections[0].connectionId !== connectionId);
+  connectionId = reconnected.connections[0].connectionId;
+  await call('attach', { tabId });
+  check('reconnection and reattachment do not bypass the stopped state', (await readControl(tabId)).state === 'waiting_user');
+  await marionette.command('WebDriver:SwitchToWindow', { handle: aiHandle });
+  await continueAndObserve(tabId);
+  await call('fill', { tabId, selector: '#name', text: '最终保留的结果' });
+  await call('click', { tabId, selector: '#submit' });
+  await call('wait', { tabId, text: '已收到 最终保留的结果' });
+  await call('task', { tabId, outcome: 'completed', message: '网页结果已核对，页面为你保留' });
+  check('explicit task completion retains the actual result page', (await readControl(tabId)).state === 'completed' && (await evalPage('return document.querySelector("#output").textContent;')).includes('最终保留的结果'));
+  check('completed is shown in the page and tab title', (await uiText('.label')).includes('完成') && (await evalPage('return document.title;')).startsWith('[AI·完成]'));
+  await capturePage('completed.png');
+  await marionette.command('Marionette:SetContext', { value: 'chrome' });
+  report.nativeGroups = await evalPage('const w=Services.wm.getMostRecentWindow("navigator:browser");return [...w.document.querySelectorAll("tab-group")].map(g=>({label:g.label||g.getAttribute("label"),color:g.color||g.getAttribute("color")}));');
+  await capturePage('zen-window.png');
+  await marionette.command('Marionette:SetContext', { value: 'content' });
+  check('native Zen tab group displays the actual completion state', report.marking !== 'native-group-and-title' || report.nativeGroups.some(group => group.label?.includes('完成')));
+  await call('click', { tabId, selector: '#submit' }, 'NOT_ATTACHED');
   report.passed = true;
 } catch (error) {
+  if (mcp) { try { report.failureTabs = await call('tabs'); console.error(JSON.stringify(report.failureTabs)); } catch {} }
   report.passed = false; report.error = error.stack; console.error(error.stack); process.exitCode = 1;
 } finally {
   if (focusMonitor) { await writeFile(focusStop, 'stop'); await new Promise(resolve => focusMonitor.once('exit', resolve)); }

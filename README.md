@@ -5,7 +5,7 @@
 - `gsap-skills`：来自 [GreenSock 官方 GSAP Skills](https://github.com/greensock/gsap-skills)，包含 8 个 GSAP 动画工程 Skill。
 - `taste-skill-suite`：来自 [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill)，包含 13 个前端与视觉设计 Skill。
 - `mattpocock-engineering`：来自 [Matt Pocock Skills](https://github.com/mattpocock/skills)，包含 9 个工程 Skill 和 `grilling` 工作流。
-- `zen-browser`：本仓库开发的 [Zen Browser Bridge](plugins/zen-browser/README.md)，通过浏览器扩展和本地 MCP 操作后台标签页，支持读取、填表、点击、导航和截图。
+- `zen-browser`：本仓库开发的 [Zen Browser Bridge](plugins/zen-browser/README.md)，在真实 Zen 标签页中后台读取、填表、点击、导航和截图；支持原生标签标记、点进观看，以及暂停、继续、接管和完成状态。
 
 上游 Skill 内容及版权归各自作者所有，详情见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。`zen-browser` 为独立开发的 MIT 插件，其安装步骤、已验证能力和限制见插件目录。
 

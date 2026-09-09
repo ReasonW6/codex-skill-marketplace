@@ -1,6 +1,6 @@
 {
   "name": "zen-browser",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Control background Zen Browser tabs through a local MCP server and Firefox extension.",
   "author": {
     "name": "ReasonW6",
@@ -12,16 +12,16 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Zen Browser",
-    "shortDescription": "在后台操作 Zen 标签页，保持前台浏览不受打扰。",
-    "longDescription": "通过 Firefox 扩展、Windows 原生通信和本地 MCP，读取网页、点击、填表、导航及截取后台标签页。用户切回标签页时自动释放控制。需要安装配套浏览器扩展与本机宿主，DOM 合成事件不等同于官方插件的全部真实输入能力。",
+    "shortDescription": "后台操作 Zen，随时观看、暂停、继续或接管。",
+    "longDescription": "在真实 Zen 标签页中读取网页、点击、填表、导航和截图。原生标签组、标题标记与页内面板显示真实步骤；点进标签可以观看，实际网页输入或暂停会停止后续写入。需要配套扩展与本机宿主，当前 XPI 未签名，DOM 事件不提供官方插件的全部真实输入能力。",
     "developerName": "ReasonW6",
     "category": "Productivity",
     "capabilities": ["Read", "Write"],
     "brandColor": "#356B58",
     "composerIcon": "./extension/icon.svg",
     "logo": "./extension/icon.svg",
-    "screenshots": ["./assets/bridge-popup.png", "./assets/background-validation.png"],
-    "defaultPrompt": ["在 Zen 后台打开网页并整理主要内容。", "在不切换前台标签页的情况下，帮我填写 Zen 网页表单。"]
+    "screenshots": ["./assets/zen-tab-state.png", "./assets/watching-control.png", "./assets/bridge-popup.png"],
+    "defaultPrompt": ["在 Zen 后台处理网页，我点进标签时继续执行，让我观看。", "帮我填写 Zen 网页表单；需要我处理时暂停并等待我继续。"]
   },
   "mcpServers": "./.mcp.json"
 }

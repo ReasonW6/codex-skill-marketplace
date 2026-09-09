@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
   "name": "Zen Browser Bridge for Codex",
-  "version": "0.1.0",
-  "description": "Control explicitly selected background tabs in Zen through a local Codex MCP bridge.",
+  "version": "0.2.0",
+  "description": "Work in real Zen tabs, watch AI operations, and pause or take over through visible page controls.",
   "homepage_url": "https://github.com/ReasonW6/codex-skill-marketplace/tree/main/plugins/zen-browser",
   "browser_specific_settings": {
     "gecko": {
@@ -11,9 +11,9 @@
       "data_collection_permissions": { "required": ["websiteContent", "browsingActivity"], "optional": [] }
     }
   },
-  "permissions": ["nativeMessaging", "tabs", "storage", "webNavigation", "<all_urls>"],
+  "permissions": ["nativeMessaging", "tabs", "tabGroups", "storage", "webNavigation", "<all_urls>"],
   "incognito": "not_allowed",
-  "background": { "scripts": ["background.js"], "persistent": true },
+  "background": { "scripts": ["control-state.js", "background.js"], "persistent": true },
   "browser_action": {
     "default_title": "Zen Browser Bridge",
     "default_popup": "popup.html",

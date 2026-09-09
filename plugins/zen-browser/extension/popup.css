@@ -1,5 +1,7 @@
 :root { color-scheme: light dark; font: 13px/1.55 system-ui,sans-serif; color: #233b32; background: #f7f8f2; }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
+.task-page { color: #7b817f; font-size: 10px; overflow-wrap: anywhere; margin-top: 4px; }
 body { width: 320px; margin: 0; }
 header { display: flex; gap: 12px; align-items: center; padding: 22px 22px 16px; }
 strong { display: block; font-size: 15px; }
@@ -13,6 +15,7 @@ button:disabled { opacity: .55; cursor: wait; }
 .hint { margin-bottom: 0; }
 #error { background: #fae7e1; color: #813a2d; border-radius: 8px; padding: 10px; overflow-wrap: anywhere; }
 footer { border-top: 1px solid #dde3d9; padding: 12px 22px; }
+#tasks{max-height:350px;overflow:auto;margin-top:14px}.task{border:1px solid #ccd8cd;border-radius:9px;padding:10px;margin-top:8px}.task strong{font-size:12px}.task-state{font-size:11px;color:#7460bf}.task p{font-size:11px;margin:5px 0 8px;overflow-wrap:anywhere}.task-actions{display:flex;gap:7px}.task-actions button{padding:6px;font-size:11px}.task[data-state=failed] .task-state{color:#b65057}.task[data-state=completed] .task-state{color:#388565}
 @media(prefers-color-scheme:dark) {
   :root { color: #e0ece5; background: #1c2823; }
   header span,.hint,footer { color: #a0b2a5; }
