@@ -5,7 +5,7 @@ let enabled = true;
 function render(state) {
   enabled = state.enabled;
   document.querySelector('#status').textContent = !state.enabled ? '已暂停' : state.connected ? '已连接本机桥接服务' : '等待本机桥接服务';
-  document.querySelector('#details').textContent = state.connected ? '正在控制 ' + state.controlledTabs + ' 个标签页' : '检查本机宿主和连接状态后再继续。';
+  document.querySelector('#details').textContent = state.connected ? (state.nativeInput ? '原生操作已启用 · ' : '普通网页操作 · ') + state.controlledTabs + ' 个受控标签页' : '检查本机宿主和连接状态后再继续。';
   toggle.textContent = state.enabled ? '暂停全部 AI 控制' : '启用连接';
   toggle.disabled = false;
   const error = document.querySelector('#error');

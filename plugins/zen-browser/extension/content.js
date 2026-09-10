@@ -8,7 +8,9 @@
   let blocked = true, stoppedAtEpoch = null, reconnectTimer = null;
   const waiting = new Map();
   const fail = (code, message) => { throw Object.assign(new Error(message), { code }); };
-  const ui = new ZenPageUi(action => control(action));
+  const ui = new ZenPageUi(action => control(action), documentId);
+  origin.nativeExpectation = () => ui.expectedNative();
+  let nativeTarget = null;
   globalThis.__reasonw6ZenPageV2 = true;
   function clearReferences() { refs.clear(); lastSnapshotId = null; }
   function applyState(next) {
@@ -35,6 +37,7 @@
       blocked = true;
       stoppedAtEpoch = state?.epoch ?? 0;
       clearReferences(); ui.clearTarget();
+      ui.blockNative();
       ui.localMessage('正在停止后续指令；已发生的网页动作不会撤销');
     }
     return sendAndWait({ type: 'user-control', id: crypto.randomUUID(), action, reason, epoch: state?.epoch }, 'control-result').then(next => {
@@ -153,8 +156,7 @@
     return origin.dispatch(element, new Constructor(type, { bubbles: true, cancelable: true, composed: true, clientX: point.x, clientY: point.y,
       button: 0, buttons: type.endsWith('down') ? 1 : 0, pointerId: 1, pointerType: 'mouse', isPrimary: true }));
   }
-  function click(element) {
-    const point = ensureClickable(element);
+  function validateActivation(element) {
     // New windows and target=_blank links can grab focus; open such URLs with zen_open.
     const link = element.closest('a[href]');
     const baseTarget = document.querySelector('base[target]')?.target;
@@ -163,6 +165,11 @@
     if (link && (linkTarget && linkTarget !== '_self' || link.download)) fail('NEW_TAB_LINK', 'Use zen_open with this link URL; opening a new window via click could affect foreground focus.');
     const formTarget = element.getAttribute('formtarget') ?? element.form?.getAttribute('target') ?? baseTarget;
     if (element.form && ['submit', 'image'].includes(element.type) && formTarget && formTarget !== '_self') fail('NEW_WINDOW_FORM', 'This form submits to another window and could affect foreground focus.');
+    if (element.type === 'file' || element.closest('label')?.control?.type === 'file') fail('UNSUPPORTED_FILE_INPUT', 'Native file selection requires a separate user-approved file operation.');
+  }
+  function click(element) {
+    const point = ensureClickable(element);
+    validateActivation(element);
     element.focus({ preventScroll: true });
     pointer(element, 'pointerover', point); pointer(element, 'mouseover', point);
     pointer(element, 'pointerdown', point); pointer(element, 'mousedown', point);
@@ -247,16 +254,42 @@
         viewport: { width: innerWidth, height: innerHeight, scrollX, scrollY }, untrustedContent: true };
     }
     if (message.command === 'probe') return { found: (!p.text || pageText().includes(p.text)) && (!p.selector || query(p.selector).some(visible)), url: location.href };
+    if (message.command === 'native_finish') {
+      if (!nativeTarget || ui.nativeLease?.token !== p.token) fail('CONTROL_CHANGED', 'The native operation no longer owns this document.');
+      const element = nativeTarget; nativeTarget = null; ui.endNative(); ui.target(element, 'succeeded');
+      return { native: true, dispatched: true, value: element.type === 'password' ? '[redacted]' : element.value ?? element.innerText,
+        summary: '原生输入已执行，请核对网页结果' };
+    }
     const element = message.command === 'scroll' && !p.ref && !p.selector ? null : target(p);
-    const label = COMMAND_LABELS[message.command] + (element ? '「' + (name(element) || element.localName) + '」' : '页面');
+    const action = message.command === 'native_prepare' ? p.action : message.command;
+    const label = (COMMAND_LABELS[action] || (action === 'drag' ? '拖动' : action)) + (element ? '「' + (name(element) || element.localName) + '」' : '页面');
     peer.postMessage({ type: 'target', id: message.id, label });
     if (element) ui.target(element, 'preparing', message.command === 'click' || message.command === 'check');
     await paintOpportunity();
     guard(message, peer);
-    // The background process grants a single use permit immediately before commit.
-    // Local input can still stop this document before the permit reply arrives.
     await sendAndWait({ type: 'authorize', id: message.id, documentId }, 'permit', Math.max(1, message.deadline - Date.now()));
     guard(message, peer);
+    if (message.command === 'native_prepare') {
+      if (!['click','fill','press','drag'].includes(action)) fail('UNSUPPORTED_NATIVE_ACTION', 'Unsupported native action.');
+      if (action === 'click' || action === 'drag' || action === 'press' && p.key === 'Enter') validateActivation(element);
+      if (action === 'press' && (p.ctrl || p.alt || p.meta)) fail('UNSUPPORTED_SHORTCUT', 'Native browser and system shortcuts are not exposed.');
+      if (action === 'fill') {
+        if (element.readOnly) fail('READ_ONLY', 'Field is read-only.');
+        if (element.type === 'file') fail('UNSUPPORTED_FILE_INPUT', 'File inputs are not text fields.');
+        if (!element.matches('input,textarea') && !element.isContentEditable) fail('NOT_EDITABLE', 'Target is not a text editor.');
+        if ([...p.text].length > 2000) fail('NATIVE_TEXT_TOO_LONG', 'Native typing accepts at most 2000 characters; choose engine:dom for a larger replacement.');
+        if (/[\u0000-\u001f\u007f\uE000-\uE05D]/u.test(p.text)) fail('NATIVE_LITERAL_REQUIRED', 'Use engine:dom for literal line breaks, tabs or WebDriver control characters. No key was sent.');
+      }
+      let point;
+      origin.runOwned(() => {
+        point = ensureClickable(element);
+        if (action === 'fill' || action === 'press') element.focus({ preventScroll: true });
+      });
+      if (action === 'drag' && (!Number.isFinite(p.toX) || !Number.isFinite(p.toY) || p.toX < 0 || p.toY < 0 || p.toX >= innerWidth || p.toY >= innerHeight)) fail('INVALID_DRAG', 'The drag destination must be inside the observed frame viewport.');
+      nativeTarget = element;
+      const lease = ui.beginNative(message.deadline);
+      return { lease, plan: { command: action, x: point.x, y: point.y, text: p.text, key: p.key, shift: p.shift, toX: p.toX, toY: p.toY, duration: p.duration } };
+    }
     let result;
     try {
       result = origin.runOwned(() => {

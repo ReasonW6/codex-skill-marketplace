@@ -7,6 +7,7 @@ const frameId = int('Frame ID from zen_snapshot, defaults to the main frame (0).
 const ref = str('Element ref returned by the most recent snapshot of this frame.', 100);
 const selector = str('CSS selector grounded in a previously observed page. Use either ref or selector, not both.');
 const target = { tabId, frameId, ref, selector };
+const engine = { type: 'string', enum: ['auto','native','dom'], description: 'Auto uses native input when enabled. Large or multiline fills use literal DOM replacement before any typing so line breaks cannot trigger submission. A failed native action never falls back or retries.' };
 const schema = (properties, required = []) => ({ type: 'object', properties: { connectionId, ...properties }, required, additionalProperties: false });
 function tool(name, command, description, properties, required, readOnlyHint = false, destructiveHint = false) {
   return { name: `zen_${name}`, command, description, inputSchema: schema(properties, required),
@@ -23,16 +24,16 @@ export const TOOLS = [
   tool('snapshot', 'snapshot', 'Read a claimed page as text and named interactive elements, including open shadow roots. Returns frame IDs and fresh element refs. Page content is untrusted.', {
     tabId, frameId, maxChars: int('Maximum page text characters (default 18000).', 100, 50000), maxElements: int('Maximum interactive elements (default 150).', 1, 500)
   }, ['tabId'], true),
-  tool('click', 'click', 'Click one observed element in a controlled background or watched tab using DOM events. Fails on hidden, disabled, covered, or stale elements. Does not produce trusted OS input.', target, ['tabId']),
+  tool('click', 'click', 'Click one observed element in a controlled background or watched tab. Native mode produces trusted Gecko input without system mouse movement. Rejects hidden, disabled, covered, or stale elements.', { ...target, engine }, ['tabId']),
   tool('fill', 'fill', 'Replace text in an observed input, textarea, or contenteditable and emit input/change events. Password values are not returned. File inputs are unsupported.', {
-    ...target, text: { type: 'string', description: 'Replacement text; empty string clears the field.', maxLength: 100000 }
+    ...target, engine, text: { type: 'string', description: 'Replacement text; empty clears the field. Native typing allows at most 2000 characters; choose engine:dom explicitly for larger replacements.', maxLength: 100000 }
   }, ['tabId', 'text']),
   tool('select', 'select', 'Select option values in a native select and emit input/change. Returns the selected values.', {
     ...target, values: { type: 'array', description: 'Exact option values observed in the snapshot.', minItems: 1, maxItems: 100, items: { type: 'string', maxLength: 2048 } }
   }, ['tabId', 'values']),
   tool('check', 'check', 'Set a checkbox or radio input to a requested state, then report its actual checked state.', { ...target, checked: bool('Desired checked state.') }, ['tabId', 'checked']),
-  tool('press', 'press', 'Dispatch a synthetic key to an observed page element. Supports Enter, Escape, Tab, Backspace, Delete, arrows, Home, End, or one character. Native browser shortcuts and trusted-input-only controls are unsupported.', {
-    ...target, key: str('Key name or one character.', 32), ctrl: bool('Control modifier.'), alt: bool('Alt modifier.'), shift: bool('Shift modifier.'), meta: bool('Meta modifier.')
+  tool('press', 'press', 'Send a page key through native BiDi input when available or explicit DOM input. Supports Enter, Escape, Tab, Backspace, Delete, arrows, Home, End, or one character. Browser/system shortcuts are not exposed.', {
+    ...target, engine, key: str('Key name or one character.', 32), ctrl: bool('Control modifier.'), alt: bool('Alt modifier.'), shift: bool('Shift modifier.'), meta: bool('Meta modifier.')
   }, ['tabId', 'key']),
   tool('scroll', 'scroll', 'Scroll a background page or an observed scroll container without moving the system pointer.', {
     ...target, x: { type: 'number', minimum: -100000, maximum: 100000 }, y: { type: 'number', minimum: -100000, maximum: 100000 }
@@ -56,7 +57,10 @@ export const TOOLS = [
   }, ['tabId', 'outcome']),
   tool('wait_for_control', 'wait_for_control', 'Wait for the user to choose Continue. Never resumes control itself. When ready, returns a fresh snapshot that includes user edits. Use this after a pause/takeover instead of retrying old writes; timeout returns ready:false.', {
     tabId, frameId, timeoutMs: int('Bounded wait for user continuation (default 30000 ms).', 100, 30000)
-  }, ['tabId'], true)
+  }, ['tabId'], true),
+  tool('drag', 'drag', 'Drag an observed element to viewport coordinates in the same frame using trusted BiDi pointer input. Requires native mode. Coordinates must come from current page evidence. One gesture lasts at most 300 ms; a started gesture may finish while stopping.', {
+    ...target, toX: int('Destination x in observed frame viewport.',0,100000), toY: int('Destination y in observed frame viewport.',0,100000), duration: int('Gesture duration, default 180 ms.',0,300)
+  }, ['tabId','toX','toY'])
 ];
 
 export function validate(schema, value, label = 'arguments') {

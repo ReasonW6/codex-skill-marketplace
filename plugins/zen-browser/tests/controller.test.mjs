@@ -229,3 +229,14 @@ test('title notifications from the AI marker do not rebroadcast the same state',
   assert.equal(f.controller.store.get(2).pageTitle, 'Updated page title');
   assert.equal(f.states.length, states + 1);
 });
+test('closing the last browser window releases the native channel and ownership',async()=>{
+  const f=fixture();await f.run('attach',{tabId:2});f.controller.nativeAvailable=true;
+  f.api.windows.getAll=async()=>[];await f.controller.syncWindows();
+  assert.equal(f.controller.port,null);assert.equal(f.controller.nativeAvailable,false);
+  assert.equal(f.controller.store.get(2).owner,null);assert.equal(f.controller.enabled,true);
+});
+test('multiline auto fill uses literal replacement before any native key can submit',async()=>{
+  const f=fixture();await f.run('attach',{tabId:2});await f.run('snapshot',{tabId:2});f.controller.nativeAvailable=true;
+  await f.run('fill',{tabId:2,selector:'textarea',text:'line one\nline two'});
+  assert.deepEqual(f.writes,['fill']);assert.equal(f.controller.nativeRpcs.size,0);
+});

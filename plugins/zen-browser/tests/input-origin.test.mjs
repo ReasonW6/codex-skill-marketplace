@@ -42,3 +42,18 @@ test('native paste, composition, wheel and physical drag are recognized', () => 
   assert.equal(origin.classify({ type: 'pointerdown', pointerType: 'touch', isPrimary: false, isTrusted: true }), 'human');
   assert.equal(origin.classify({ type: 'click', isTrusted: true }), 'human');
 });
+test('native pointer signatures do not suppress an actual mouse at the same target',()=>{
+  const origin=new context.ZenInputOrigin();origin.nativeExpectation=()=>({type:'pointer',x:50,y:60});
+  const event={type:'pointerdown',isTrusted:true,pointerId:0,pointerType:'mouse',buttons:1,clientX:50,clientY:60};
+  assert.equal(origin.classify(event),null);
+  assert.equal(origin.classify({...event,pointerId:1}),'human');
+  assert.equal(origin.classify({...event,clientX:90}),'human');
+});
+test('only the current native key and its editing events match the input permit',()=>{
+  const origin=new context.ZenInputOrigin();origin.nativeExpectation=()=>({type:'key',key:'x'});
+  assert.equal(origin.classify({type:'keydown',isTrusted:true,key:'x'}),null);
+  assert.equal(origin.classify({type:'input',isTrusted:true,inputType:'insertText',data:'x'}),null);
+  assert.equal(origin.classify({type:'keydown',isTrusted:true,key:'y'}),'human');
+  origin.nativeExpectation=()=>null;
+  assert.equal(origin.classify({type:'keydown',isTrusted:true,key:'x'}),'human');
+});

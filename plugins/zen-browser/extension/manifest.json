@@ -1,7 +1,7 @@
 {
   "manifest_version": 2,
   "name": "Zen Browser Bridge for Codex",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Work in real Zen tabs, watch AI operations, and pause or take over through visible page controls.",
   "homepage_url": "https://github.com/ReasonW6/codex-skill-marketplace/tree/main/plugins/zen-browser",
   "browser_specific_settings": {

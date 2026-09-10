@@ -179,12 +179,12 @@ try {
   await startFocusMonitor('background');
   mcp = startClient();
   const init = await mcp.rpc('initialize', { protocolVersion: '2025-11-25', clientInfo: { name: 'zen-e2e', version: '2' }, capabilities: {} });
-  check('MCP starts from the shipped configuration', init.serverInfo.version === '0.2.0');
+  check('MCP starts from the shipped configuration', init.serverInfo.version === '0.3.0');
   let status;
   for (let i = 0; i < 40; i++) { status = await call('status'); if (status.connected) break; await new Promise(resolve => setTimeout(resolve, 250)); }
   check('native messaging and authenticated local pipe connect', status.connected);
   connectionId = status.connections[0].connectionId;
-  check('all 19 MCP tools are discoverable', (await mcp.rpc('tools/list')).tools.length === 19);
+  check('all 20 MCP tools are discoverable', (await mcp.rpc('tools/list')).tools.length === 20);
   const beforeHandles = resultValue(await marionette.command('WebDriver:GetWindowHandles'));
   const opened = await call('open', { url: base + '/', taskTitle: 'Zen AI 观看与接管验收' });
   const tabId = opened.tabId;
@@ -405,6 +405,15 @@ try {
   await capturePage('completed.png');
   await marionette.command('Marionette:SetContext', { value: 'chrome' });
   report.nativeGroups = await evalPage('const w=Services.wm.getMostRecentWindow("navigator:browser");return [...w.document.querySelectorAll("tab-group")].map(g=>({label:g.label||g.getAttribute("label"),color:g.color||g.getAttribute("color")}));');
+  for (let i = 0; i < 40; i++) {
+    report.nativeTabIcon = await evalPage('const w=Services.wm.getMostRecentWindow("navigator:browser");return w.gBrowser.selectedTab.getAttribute("image");');
+    const iconUrl = report.nativeTabIcon?.startsWith('moz-remote-image:') ? new URL(report.nativeTabIcon).searchParams.get('url') : report.nativeTabIcon;
+    report.completedIcon = !!iconUrl && (iconUrl.includes(';base64,') ? Buffer.from(iconUrl.split(';base64,')[1], 'base64').toString('utf8') : decodeURIComponent(iconUrl)).includes('#27785d');
+    if (report.completedIcon) break;
+    await new Promise(resolve => setTimeout(resolve, 50));
+  }
+  check('the native tab favicon reaches the completed state', report.completedIcon);
+  await new Promise(resolve => setTimeout(resolve, 100));
   await capturePage('zen-window.png');
   await marionette.command('Marionette:SetContext', { value: 'content' });
   check('native Zen tab group displays the actual completion state', report.marking !== 'native-group-and-title' || report.nativeGroups.some(group => group.label?.includes('完成')));

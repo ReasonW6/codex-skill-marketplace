@@ -10,10 +10,10 @@ import { startHost } from '../server/native-host.mjs';
 import { NativeDecoder, nativeFrame, LineDecoder } from '../server/wire.mjs';
 
 const tick = () => new Promise(resolve => setTimeout(resolve, 10));
-async function fixture(t) {
+async function fixture(t, nativeDriver) {
   const home = await mkdtemp(path.join(os.tmpdir(), 'reasonw6-zen-host-test-'));
   const input = new PassThrough(), output = new PassThrough();
-  const host = await startHost({ input, output, home });
+  const host = await startHost({ input, output, home, nativeDriver });
   const messages = [], decoder = new NativeDecoder();
   decoder.on('message', message => messages.push(message)); output.on('data', chunk => decoder.push(chunk));
   input.write(nativeFrame({ type: 'hello', version: 1, browser: { name: 'test' } }));
@@ -22,6 +22,7 @@ async function fixture(t) {
     try { entry = JSON.parse(await readFile(path.join(home, 'connections', `${host.id}.json`), 'utf8')); break; } catch { await tick(); }
   }
   assert.ok(entry);
+  assert.deepEqual(messages.shift(), { type: 'native-ready', available: !!nativeDriver });
   t.after(async () => { input.end(); await host.close(); });
   return { host, input, messages, entry, home };
 }
@@ -65,4 +66,16 @@ test('timeout cancels a queued operation and late responses are ignored', async 
   assert.ok(f.messages.some(m => m.type === 'cancel'));
   f.input.write(nativeFrame({ type: 'response', id: f.messages[0].id, result: { clicked: true } }));
   await tick(); assert.equal(client.replies.length, 1);
+});
+test('a native permit is tied to its owned request and can be consumed only once',async t=>{
+  const executed=[];const driver={execute:async(...args)=>{executed.push(args);return{native:true};},cancel(){},async close(){}};
+  const f=await fixture(t,driver),client=await connect(f.host.endpoint);t.after(()=>client.socket.destroy());
+  client.send({token:f.entry.token,id:'owned',command:'click',params:{tabId:8}});await until(()=>f.messages.some(m=>m.type==='request'));
+  const request=f.messages.find(m=>m.type==='request');
+  const native={type:'native-request',id:'native-1',requestId:request.id,sessionId:request.sessionId,tabId:8,plan:{command:'click'},lease:{},deadline:Date.now()+1000};
+  f.input.write(nativeFrame({...native,sessionId:'another-session'}));await until(()=>f.messages.some(m=>m.type==='native-response'));
+  assert.equal(executed.length,0);assert.equal(f.messages.find(m=>m.type==='native-response').error.code,'NATIVE_NOT_AUTHORIZED');
+  f.input.write(nativeFrame(native));await until(()=>executed.length===1);await tick();
+  f.input.write(nativeFrame({...native,id:'duplicate'}));await tick();assert.equal(executed.length,1);
+  assert.equal(f.messages.find(m=>m.id==='duplicate').error.code,'NATIVE_NOT_AUTHORIZED');
 });

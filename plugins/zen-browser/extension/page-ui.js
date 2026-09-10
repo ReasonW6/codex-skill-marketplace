@@ -4,7 +4,8 @@
   const STYLE = `
     :host{all:initial!important;position:fixed!important;inset:var(--zen-ai-top,auto) var(--zen-ai-right,16px) var(--zen-ai-bottom,16px) var(--zen-ai-left,auto)!important;z-index:2147483647!important;display:block!important;width:min(326px,calc(100vw - 24px))!important;pointer-events:auto!important;contain:style!important;color-scheme:light!important}
     *{box-sizing:border-box}[hidden]{display:none!important}button{font:inherit;cursor:pointer}button:disabled{cursor:default;opacity:.5}
-    .panel{font:12px/1.45 system-ui,-apple-system,sans-serif;color:#f5f3ff;background:#222235f5;border:1px solid #9990cd6b;border-radius:14px;box-shadow:0 8px 32px #0003;padding:12px;backdrop-filter:blur(14px)}
+    .panel{position:relative;z-index:2147483647;font:13px/1.5 system-ui,-apple-system,sans-serif;color:#f5f3ff;background:#222235f5;border:1px solid #9990cd6b;border-radius:14px;box-shadow:0 8px 32px #0003;padding:12px;backdrop-filter:blur(14px)}
+    .edge{position:fixed;inset:0;pointer-events:none;border:2px solid var(--edge-color,#a48be9);border-radius:8px;z-index:2147483645;box-shadow:inset 0 0 0 1px #ffffff35}
     header{display:flex;align-items:center;gap:8px}.mark{display:grid;place-items:center;width:28px;height:28px;border:1px solid #a99dea;border-radius:9px;background:#7460bf;color:#fff;font-size:10px;font-weight:800;letter-spacing:.4px}
     .heading{flex:1;min-width:0}.label{font-size:12px;font-weight:750}.mode{color:#bbb6d4;font-size:10px;margin-left:6px}.title{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#bdb8d0;font-size:11px;max-width:220px}
     .collapse{border:0;color:#ddd6f5;background:transparent;font-size:16px;width:25px;height:26px;border-radius:6px}.collapse:hover{background:#ffffff15}
@@ -18,8 +19,12 @@
     @media(prefers-reduced-motion:reduce){.target,.cursor{transition:none}}
   `;
   class ZenPageUi {
-    constructor(onAction) {
+    constructor(onAction, documentId) {
       this.onAction = onAction;
+      this.documentId = documentId;
+      this.nativeLease = null;
+      this.visibleSince = document.hidden ? 0 : Date.now();
+      this.focusedSince = document.hasFocus() ? Date.now() : 0;
       this.host = null;
       this.baseTitle = document.title;
       this.appliedTitle = null;
@@ -30,7 +35,8 @@
       this.onScroll = () => this.positionTarget();
       window.addEventListener('scroll', this.onScroll, { capture: true, passive: true });
       window.addEventListener('resize', this.onScroll, { passive: true });
-      document.addEventListener('visibilitychange', () => this.render());
+      document.addEventListener('visibilitychange', () => { if (!document.hidden) this.visibleSince = Date.now(); this.render(); this.updateBinding(); });
+      window.addEventListener('focus', event => { if (event.target === window) { this.focusedSince = Date.now(); this.updateBinding(); } }, true);
     }
     mount() {
       if (this.host?.isConnected || !document.documentElement) return;
@@ -39,7 +45,9 @@
       host.setAttribute('role', 'region');
       host.setAttribute('aria-label', 'Zen AI 控制');
       const root = host.attachShadow({ mode: 'closed' });
+      this.binding = document.createElement('meta'); this.binding.name = 'zen-native-binding'; root.append(this.binding);
       const style = document.createElement('style'); style.textContent = STYLE; root.append(style);
+      this.edge = document.createElement('div'); this.edge.className = 'edge'; this.edge.hidden = window !== window.top; root.append(this.edge);
       const panel = document.createElement('section'); panel.className = 'panel';
       panel.innerHTML = '<header><span class="mark">AI</span><div class="heading"><span class="label"></span><span class="mode"></span><span class="title"></span></div><button class="collapse" data-action="collapse" aria-label="收起或展开状态面板" title="收起 / 展开">−</button></header><p class="detail" role="status" aria-live="polite"></p><div class="actions"><button data-action="pause">暂停</button><button data-action="resume">继续</button><button data-action="takeover">接管</button></div><div class="foot"><span class="step"></span><span>点击网页会接管 · 悬停仅观看</span></div>';
       root.append(panel); this.panel = panel;
@@ -60,12 +68,38 @@
       this.render();
     }
     contains(event) { return !!this.host && event.composedPath().includes(this.host); }
-    update(state) { this.state = state; this.mount(); this.render(); this.updateTitle(); }
+    update(state) {
+      if (state.epoch !== this.state?.epoch || !state.controlled) { this.nativeLease = null; this.nativeBlocked = false; }
+      this.state = state; this.mount(); this.render(); this.updateTitle(); this.updateBinding(); this.updateIcon();
+    }
+    updateBinding() {
+      if (!this.binding) return;
+      let expected = null;
+      try { const old = JSON.parse(this.binding.content); if (old.token === this.nativeLease?.token) expected = old.expected; } catch {}
+      this.binding.content = JSON.stringify({ documentId: this.documentId, epoch: this.state?.epoch, controlled: !!this.state?.controlled && !this.nativeBlocked,
+        token: this.nativeLease?.token || null, expected, visibleSince: this.visibleSince, focusedSince: this.focusedSince });
+    }
+    beginNative(deadline) {
+      this.nativeBlocked = false;
+      this.nativeLease = { documentId: this.documentId, epoch: this.state.epoch, token: crypto.randomUUID(), url: location.href, deadline };
+      this.updateBinding(); return this.nativeLease;
+    }
+    endNative() { this.nativeLease = null; this.updateBinding(); }
+    blockNative() { this.nativeBlocked = true; this.nativeLease = null; this.updateBinding(); }
+    expectedNative() {
+      if (!this.nativeLease || this.nativeBlocked || Date.now() >= this.nativeLease.deadline) return null;
+      try {
+        const value = JSON.parse(this.binding.content);
+        if (!value.controlled || value.token !== this.nativeLease.token || value.epoch !== this.state.epoch) return null;
+        return typeof value.expected === 'string' ? JSON.parse(value.expected) : value.expected;
+      } catch { return null; }
+    }
     localMessage(message) { this.mount(); if (this.panel) this.panel.querySelector('.detail').textContent = message; }
     render() {
       if (!this.panel || !this.state) return;
       const s = this.state, active = ['observing', 'idle', 'running'].includes(s.state);
       this.panel.dataset.state = s.state;
+      this.edge.style.setProperty('--edge-color', ({ paused: '#c8a052', waiting_user: '#c8a052', user_control: '#8395ac', completed: '#62b899', failed: '#dd7885' })[s.state] || '#a48be9');
       this.panel.dataset.collapsed = String(!!s.collapsed);
       this.panel.querySelector('.label').textContent = s.stopping ? '正在停止' : s.label;
       this.panel.querySelector('.mode').textContent = active ? document.hidden ? '后台' : '观看' : s.state === 'user_control' ? '手动' : s.state === 'completed' ? '结果保留' : '';
@@ -89,6 +123,18 @@
       this.lastPrefix = '[AI·' + marker + '] ';
       this.appliedTitle = this.lastPrefix + this.baseTitle;
       if (document.title !== this.appliedTitle) document.title = this.appliedTitle;
+    }
+    updateIcon() {
+      if (!this.state || window !== window.top || !document.head) return;
+      const state = this.state.state;
+      if (this.iconState === state && this.icon?.isConnected) return;
+      if (!this.icon) { this.icon = document.createElement('link'); this.icon.rel = 'icon'; this.icon.type = 'image/svg+xml'; this.icon.sizes = 'any'; }
+      const color = ({ paused: '#ac7d2a', waiting_user: '#ac7d2a', user_control: '#52677f', completed: '#27785d', failed: '#ad3e54' })[state] || '#7560ce';
+      const glyph = state === 'completed' ? '<path d="m8 16 5 5 11-12" fill="none" stroke="white" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'
+        : state === 'paused' ? '<path d="M11 8v16M21 8v16" stroke="white" stroke-width="5"/>'
+          : '<text x="16" y="22" text-anchor="middle" font-family="system-ui,sans-serif" font-weight="800" font-size="18" fill="white">' + (state === 'failed' ? '!' : state === 'user_control' ? 'U' : 'AI') + '</text>';
+      this.icon.href = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32"><rect width="32" height="32" rx="8" fill="' + color + '"/>' + glyph + '</svg>');
+      document.head.append(this.icon); this.iconState = state;
     }
     target(element, phase = 'preparing', pointer = true) {
       this.mount();

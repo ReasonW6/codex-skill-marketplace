@@ -1,6 +1,6 @@
 {
-  "pluginVersion": "0.2.0",
-  "validatedAt": "2026-09-09T15:21:53.598Z",
+  "pluginVersion": "0.3.0",
+  "validatedAt": "2026-09-10T02:40:06.728Z",
   "environment": {
     "os": "Windows",
     "zen": "1.22b",
@@ -11,17 +11,22 @@
     "isolatedProfile": true
   },
   "unitTests": {
-    "passed": 37,
-    "failed": 0
+    "passed": 55,
+    "failed": 0,
+    "skipped": 0
+  },
+  "syntax": {
+    "passed": true,
+    "files": 34
   },
   "zenIntegration": {
     "passed": true,
-    "count": 56,
+    "count": 57,
     "checks": [
       "Zen loads the real WebExtension",
       "MCP starts from the shipped configuration",
       "native messaging and authenticated local pipe connect",
-      "all 19 MCP tools are discoverable",
+      "all 20 MCP tools are discoverable",
       "AI tab is created in the background",
       "controlled tab has a native group or an explicit title fallback",
       "tab title displays a real AI state",
@@ -73,22 +78,65 @@
       "reconnection and reattachment do not bypass the stopped state",
       "explicit task completion retains the actual result page",
       "completed is shown in the page and tab title",
+      "the native tab favicon reaches the completed state",
       "native Zen tab group displays the actual completion state"
     ]
   },
+  "nativeIntegration": {
+    "passed": true,
+    "count": 25,
+    "checks": [
+      "production launcher automatically loads the unsigned extension",
+      "MCP discovers native mode from the launched browser",
+      "the actual MCP click produces trusted page behavior",
+      "native MCP input keeps its tab in the background",
+      "native typing replaces text with real keyboard input",
+      "native form input and submission update the application",
+      "native background work preserves front focus, text and selection",
+      "native events are not falsely classified as takeover",
+      "multiline fill remains literal and cannot press Enter to submit",
+      "native input binds to the exact iframe document",
+      "identical URLs cannot confuse native target identity",
+      "Windows foreground preserved during native-background",
+      "selecting the tab enters watching without changing ownership",
+      "watching retains control during trusted typing and Enter",
+      "continuous watched input remains owned and complete",
+      "Windows foreground preserved during native-watching",
+      "pause stops native typing before the remaining characters",
+      "Continue cannot replay an old queued native write",
+      "actual page input still takes over native mode",
+      "native drag reaches the page without a false takeover",
+      "another MCP connection cannot take the native tab",
+      "native completion retains the real result page",
+      "a restart automatically reloads the unsigned extension",
+      "restarting the same profile preserves its login session",
+      "native input reconnects after browser restart"
+    ],
+    "automaticTemporaryLoad": true,
+    "sameProfileLoginRetainedAfterRestart": true
+  },
   "windowsForeground": {
     "passed": true,
-    "samples": 59,
-    "uniqueNonzeroWindows": 1,
+    "samples": 99,
     "phases": [
       {
         "phase": "background",
-        "samples": 27,
+        "samples": 35,
         "uniqueNonzeroWindows": 1
       },
       {
         "phase": "watching",
-        "samples": 32,
+        "samples": 28,
+        "uniqueNonzeroWindows": 1
+      },
+      {
+        "phase": "native-background",
+        "samples": 16,
+        "uniqueNonzeroWindows": 1
+      },
+      {
+        "phase": "native-watching",
+        "samples": 20,
         "uniqueNonzeroWindows": 1
       }
     ]
@@ -100,7 +148,8 @@
         "label": "AI · 已完成",
         "color": "green"
       }
-    ]
+    ],
+    "completedFavicon": true
   },
   "testRegistrationRestored": true,
   "extensionLint": {
@@ -108,7 +157,10 @@
     "errors": 0,
     "warnings": 0,
     "notices": 0,
-    "updateCheck": "Config-store permission warning; extension validation passed without changing permissions."
+    "updateCheck": "Config-store permission notice; extension validation passed without changing permissions."
+  },
+  "pluginAndSkillValidation": {
+    "passed": true
   },
   "dependencyAudit": {
     "totalVulnerabilities": 0,
@@ -118,33 +170,65 @@
     "watching": true,
     "pauseAndTakeover": true,
     "noAutomaticWriteReplay": true,
-    "trustedInput": false,
+    "trustedInput": true,
+    "nativeInputScope": [
+      "click",
+      "keyboard",
+      "drag"
+    ],
+    "automaticTemporaryReloadWithLauncher": true,
     "officialBrowserUi": false,
+    "mozillaSigningWorkflow": false,
     "mozillaSigned": false,
-    "authenticodeSigned": false
+    "authenticodeSigned": false,
+    "dailyProfileModified": false
   },
   "sourceHashNormalization": "UTF-8 text with LF line endings",
   "sourceSha256": {
     ".mcp.json": "eacb3fb7bba055e8a957ef7d94eec9b32f50df8bf6e44b451fe7d412a90671eb",
-    "server/mcp.mjs": "91655d45d374b4db9172c0964baf8bdb0763ecf91c7d84d987a9125eb3843859",
-    "server/client.mjs": "8da6b8eb4f4c730c28a4cad190075e13c01282c6bfcb2d7a1d289b78df3554b5",
-    "server/native-host.mjs": "7b1dc699267e410a90f41a2528fd66dc9c4bbf0e9a8549295612d01872a60e9b",
-    "server/wire.mjs": "e0031df88a35d451c908bbd28765cb4d7def7172c61ebb7b4b32641d3b9c4623",
-    "server/paths.mjs": "d45f55024ff8e18bb9e89bd4baa2c7143d35a2552440a97c24fd6f3e4fa09975",
-    "server/tools.mjs": "7114e79f7a2a5e39fdb113687018b64517514e5b102f53600f650a3bfd027631",
-    "extension/manifest.json": "31de289d67f2aecdd7c5299cc29fb49fcbba4446fa6d46d547670ca8d6fdff8c",
-    "extension/background.js": "c91a0a8e9a67afa7169ff15139e84e360bc19f640d6822bc15a946dcd6b3f68d",
+    ".codex-plugin/plugin.json": "09fd3710c217af6be7d5dfc9f62b3a735c14c3ea44f8773aef0e8fc00ac4b49b",
+    "package.json": "3099bd94c7511194be2144b8378e4f2b2f3520b1025bd1d2e183aa159206afe1",
+    "package-lock.json": "5129c7148da640725181c953a8b019bbd53be3634cb7a0811f3808ca2b82129b",
+    "extension/background.js": "1444b403e3736e38d57152aa30094707bbc183a1f4d8ddc4dfa7a72a95115bfe",
+    "extension/content.js": "263c27706909fff7f306136cdf8f0f5e3d5b848e23f307e0e785dd7d89aa5fcd",
     "extension/control-state.js": "a32497e66a8a24e247e3f1f581451b6adc9da9ba423aa92cea69b30872bfee30",
-    "extension/content.js": "35295016d465f0efaa7f8bc6e78521a4c434cb8b84374202dbfc069d814e20fe",
-    "extension/input-origin.js": "79e374b2d7bc7f505b9c0720ad6ea3f5daa43165176a8c318c16e7cf5069b83e",
-    "extension/page-ui.js": "8079098d3d9d0d2bc2127a8ca5e300bed98991b308c51715adcd369752a013fd",
-    "extension/popup.html": "1e07a691a307b6b22378d0e15836f1e4206a45e238da8db05826ab742836ccd5",
+    "extension/input-origin.js": "dde48067f0d746b191505e2166f093d8eb82ff9749e9df1f47823be92885fe3e",
+    "extension/manifest.json": "435f87927143c613b119be0710dff84a4fdad4716539d4320c4bf4caa9cbe1ce",
+    "extension/page-ui.js": "a90625cc44b3a9a83f381ab0df25d995f9ada11de29a54d5fbb7fcb7fb8b0ca7",
     "extension/popup.css": "12458ce8be54e7e7f285f1a83a8a526f933fa067edd563b1e635b3e38643e56b",
-    "extension/popup.js": "c4d5d7b55ff3e239dc99c712485fe4d6d98e04763dd5ec7139fa2525d9089151",
-    "scripts/install-host.ps1": "95aea82d8b64c6b2924e67dade1ba66a85973950a3e9043c85b12f9857d41fbc",
+    "extension/popup.html": "1e07a691a307b6b22378d0e15836f1e4206a45e238da8db05826ab742836ccd5",
+    "extension/popup.js": "f646500bf7d622202a3a3697a3c5b1eb463ddbb0345415a933dcb70f194d19bc",
+    "server/bidi.mjs": "0aa44cd8703ae758a3bb1318e7afe583845ff6d1a577030de9eef9d79183aa08",
+    "server/client.mjs": "8da6b8eb4f4c730c28a4cad190075e13c01282c6bfcb2d7a1d289b78df3554b5",
+    "server/launch-zen.mjs": "cfd442d783cce47a039569bff8b4ee63712f4995e4095b49409aaf2e3cc5abef",
+    "server/mcp.mjs": "e656b24e56b17d6421cc8dd54db0b3210fa53554e3819d1d7e7ee1200ffd0b8c",
+    "server/native-driver.mjs": "5ab1438bf233fcf1bdbf9a437af88704b3b9eb1bd235e960a1c2834acb0f3d78",
+    "server/native-host.mjs": "3139b63b5affd1eb86dab8edbbabf6349d02da8a8ca5f37094fff59cb44ee935",
+    "server/paths.mjs": "d45f55024ff8e18bb9e89bd4baa2c7143d35a2552440a97c24fd6f3e4fa09975",
+    "server/tools.mjs": "3fc8c6050604fad46d30950383020e378c7207586abeb00c9ad6a24916f7de7b",
+    "server/wire.mjs": "e0031df88a35d451c908bbd28765cb4d7def7172c61ebb7b4b32641d3b9c4623",
+    "scripts/check-profile-idle.ps1": "86579a32bee4523a9c5c054aca67af8881fb6a32f7e8e99194760f16ab2857ab",
+    "scripts/check.mjs": "010d4e9be02a5cdf24ab8c4fc9117069e623366b2f8aa81cfbf13ed39aecd821",
+    "scripts/configure-native-profile.ps1": "1494c3527d7337a287589535552aaf595ae948ba1da4e5b90de7cabfb19c1467",
+    "scripts/doctor.ps1": "c29a02150c9639a468d2cbbab0c9dae0b90b3f35d1c04fbfdf71ca8811f2c90f",
+    "scripts/install-host.ps1": "d1a40b9905a0af386f42f49573703120e6b493c18ede256bf9806f2dacba1c9e",
     "scripts/NativeLauncher.cs": "4c6238189a6aa999734b7c10a64f67a50784d68959190e2a592f811f37f3130a",
-    "tests/controller.test.mjs": "e8c2c158141bb2377b0a951b7daa8b2bd95e9cadd73434600fc4d69fadd9795b",
-    "tests/input-origin.test.mjs": "4bcd706f559d7189663204f49ebf7dc1e361e090978fa6c0968e277391973836",
-    "tests/zen-e2e.mjs": "20ad2eb5eb0a88d696d72584327ede1b9d515bce6a14c26ab88e041ccd941927"
+    "scripts/package.mjs": "d384c4113bcf9466dcfe9724435641cc3292d7275b56c712c814218647d34eb4",
+    "scripts/PhysicalInputProbe.cs": "10b4055ab15263309b83ecea9ed06fdc24bef6fefd341975dd548909c61816a3",
+    "scripts/start-zen.ps1": "abd240e209e164872ac112c17cc77158ffa864ddbc35121fdc4e28c4db19130a",
+    "scripts/unregister-host.ps1": "ff2df070d5d7e066eeb5f3be5a0566a2c7578288bacbf27123ed7f1b8dc2b7bb",
+    "scripts/verify-browser-process.ps1": "c71a3d3d96c92dfba666f29a72c45becc116c88ca8c9a3dc3fb9c067f456e019",
+    "tests/controller.test.mjs": "4d349bed6d7456ec52b21666703d37fa675284b8dc3d3cbeefd880b4d3e5b004",
+    "tests/focus-monitor.ps1": "d6921dec10fe7fa0ab8faa2b0fc256b920734dd55e0086115d9d0c241e25d8de",
+    "tests/host.test.mjs": "ccdd620464374f1e3e4522aa0ed9a73b6a9f0045c59ecf9af58dd93eeef7960a",
+    "tests/input-origin.test.mjs": "4e2081549e970a7a3c9581d270f5f4f433d1e5a980c137f52fd132b56bf2365b",
+    "tests/marionette.mjs": "8c8f352904f7e2f26fc90b141dc831f14d5a42ccfae270334b645f31ef64e1bc",
+    "tests/mcp.test.mjs": "947e237e9e916951ff42c3ecc4d94a80211ef2f7b3e7399eeb27f0c207b5a09c",
+    "tests/native-driver.test.mjs": "ce5ad2ec51c50e9f37af512b120284ee9d621e4893c6b6db246cfb33e437ff27",
+    "tests/native-inspection-host.mjs": "c385eff30a1a380bfcabe734750beafc18d0136260d94236c8913a34465dc9ae",
+    "tests/profile-setup.test.mjs": "e8f3ce9ac98aa9b24724b35e800c3a4ebe6ec39078b30204012be4bb59f6e9f4",
+    "tests/wire.test.mjs": "423fa7a6c75520aad0dde837a92bb33e68894fd74a5767609fc5b292b8f018f8",
+    "tests/zen-e2e.mjs": "d499dc9328d6ac3e2ac99cc6b078b792d550f63934b9c4c7e9d38f07ef852dbb",
+    "tests/zen-native-e2e.mjs": "cd10c08c112b88e2d0d91ccb2854ec0901491a0003cc4e2e6b7cd175c314be92"
   }
 }

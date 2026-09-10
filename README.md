@@ -118,7 +118,7 @@ codex plugin marketplace remove reasonw6-plugins
 
 ### Zen Browser Bridge
 
-后台操作 Zen 的普通网页标签页，用户切回标签页时释放控制。支持普通及 React 表单、iframe、open shadow DOM 和后台截图。它是独立 MCP 接入，不提供官方 `@Browser` 私有入口或完整真实输入能力；长期安装浏览器扩展还需要 Mozilla 签名。详见 [安装说明](plugins/zen-browser/README.md)和[验证记录](plugins/zen-browser/docs/VALIDATION.md)。
+后台操作真实 Zen 标签页，用户点进标签可以继续观看，实际输入或点击接管才停止 AI。0.3.0 新增 BiDi 可信点击、键盘输入、拖动，以及每次启动自动加载未签名扩展的配套启动器；不包含 Mozilla 签名流程。支持普通及 React 表单、iframe、open shadow DOM、后台截图和状态标识。它是独立 MCP 接入，官方私有 `@Browser` 入口仍不可用。原生模式需要明确选择配置并完成单项可回滚设置，详见 [安装说明](plugins/zen-browser/README.md)和[验证记录](plugins/zen-browser/docs/VALIDATION.md)。
 
 ## 避免重复加载
 

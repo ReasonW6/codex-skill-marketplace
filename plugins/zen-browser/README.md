@@ -1,14 +1,14 @@
 # Zen Browser Bridge for Codex
 
-让 AI 在真实 Zen 标签页中工作，随时点进标签观看，或用暂停、继续、接管按钮交还控制。通过 **Firefox 扩展 + Windows 原生通信宿主 + 本地 MCP** 接入 Codex；后台操作保留现有登录会话，不调用系统鼠标键盘，不激活标签页或聚焦窗口。
+让 AI 在真实 Zen 标签页中工作，随时点进标签观看，或用暂停、继续、接管按钮交还控制。通过 **Firefox 扩展 + Windows 原生通信宿主 + 本地 MCP** 接入 Codex；后台操作保留现有登录会话，不发送系统鼠标键盘输入，不激活标签页或聚焦窗口。
 
-当前版本为 `0.2.0`。这版实现了后台工作、可见观看、真实步骤反馈和明确交接控制的流程。它采用 Zen 原生标签组、标题标记和页内面板，**没有完整复刻官方 Chrome 插件的原生样式、`@Browser` 入口和真实输入能力**。浏览器扩展仍为 **未签名 XPI**，长期安装需要 Mozilla 签名。
+当前版本为 `0.3.0`。新增 WebDriver BiDi 真实网页点击、键盘输入和拖动，配套启动器每次启动时自动加载扩展；观看、暂停、接管和重新观察规则同样适用于真实输入。标签组、状态图标、标题、页面边框和面板共同标识受控页面。**本项目不包含 Mozilla 签名流程**，也不更改签名校验。原生标签外观遵循 Zen 的样式；官方私有 `@Browser` 入口仍不可用。
 
 ![Zen 原生标签组与结果页](assets/zen-tab-state.png)
 
 ## 观看、暂停与接管
 
-- **找到 AI 标签**：支持时创建单标签的 Zen 原生分组，名称和颜色跟随真实状态；同时为页面标题加上 `[AI·运行]` 等标记。已有分组、固定标签和分屏标签保留原布局，使用标题和页内面板标识。没有分组 API 时也使用这一替代方案，不修改全局主题或浏览器设置。
+- **找到 AI 标签**：支持时创建单标签的 Zen 原生分组，名称和颜色跟随真实状态；同时显示 AI 状态图标和 `[AI·运行]` 等标题标记。页面边缘和面板跟随状态改变颜色。已有分组、固定标签和分屏标签保留原布局，使用图标、标题和页内提示标识。没有分组 API 时也使用这一替代方案，不修改全局主题。
 - **观看**：点击 AI 标签、切换标签、页面变为可见或鼠标悬停不会交出控制。面板显示当前步骤，填写、点击、滚动和导航直接发生在真实网页上。目标框和页内虚拟指针跟随真实指令，完成后短暂保留反馈；系统鼠标不会移动。
 - **暂停**：页内或扩展面板的暂停按钮立即使旧指令失效。停止确认期间显示“正在停止”，待执行工作停止后才允许继续。已经发生的网页动作保留原结果。
 - **接管**：点接管，或开始实际点击、输入、拖动、粘贴、滚动网页内容，后续 AI 写入停止，用户输入照常到达网页。仅悬停、浏览器产生的焦点事件和插件自身编辑事件不触发接管。
@@ -31,7 +31,7 @@
 | 标签页 | 列出、创建后台标签、控制明确指定的标签、释放控制；支持可见观看 |
 | 页面观察 | 可见文本、交互元素名称、元素引用、iframe 列表、open shadow DOM |
 | 表单 | 普通输入、React 受控表单、textarea、contenteditable、select、复选框 |
-| 交互 | DOM 点击、有限的合成键盘事件、页面和嵌套容器滚动 |
+| 交互 | 原生模式的可信点击、键盘输入、拖动；普通模式的 DOM 操作；页面和嵌套容器滚动 |
 | 导航 | HTTP(S) 导航、后退、前进、刷新、等待指定内容 |
 | 截图 | Firefox `tabs.captureTab` 截取非选中标签页，无需切换到该标签 |
 | 登录状态 | 使用扩展所在的真实 Zen 配置与现有网页会话 |
@@ -41,7 +41,7 @@
 
 ## 安装
 
-需要 Windows 10/11、Node.js 22 或更新版本、Windows 自带的 .NET Framework 4.x，以及 Zen。扩展清单最低 Gecko 版本是 142；实机验证的版本和环境见 [验证记录](docs/VALIDATION.md)。
+需要 Windows 10/11、PowerShell 7、Node.js 22 或更新版本、Windows 自带的 .NET Framework 4.x，以及 Zen。扩展清单最低 Gecko 版本是 142；原生模式还需要浏览器支持 BiDi `webExtension.install` 和输入接口。本版实测 Zen 1.22b / Gecko 155，其他版本的原生模式尚未验证，详见 [验证记录](docs/VALIDATION.md)。
 
 ### 1. 在 Codex 安装插件
 
@@ -65,17 +65,37 @@ pwsh -NoProfile -File .\scripts\install-host.ps1
 
 每次安装生成独立版本目录和回滚收据，保留上次的文件与注册位置。安装目录限制为当前用户、SYSTEM 和管理员可访问。脚本拒绝覆盖不属于本插件的非空目录。
 
-宿主复制在稳定位置，刷新 Codex 的插件缓存不会破坏它。升级插件代码后重新运行安装脚本，并在扩展面板里暂停、启用一次，使宿主使用新版本。
+宿主复制在稳定位置，刷新 Codex 的插件缓存不会破坏它。启动器和扩展仍从解压目录读取，请把完整 ZIP 解压到固定位置并保留该目录。升级后重新运行安装脚本，再使用新目录中的启动器启动 Zen。
 
-### 3. 在 Zen 加载扩展
+### 3. 选择配置并启用原生模式
 
-开发版加载步骤：
+在 Zen 的 `about:profiles` 确认需要使用的配置的**根目录**，然后正常退出该配置的所有窗口。脚本只接受已经存在、当前未运行的明确配置，不会结束浏览器进程或替你选择日常配置。
 
-1. 在 Zen 打开 `about:debugging#/runtime/this-firefox`。
-2. 选择“临时载入附加组件”，打开本插件 `extension/manifest.json`。
-3. 点击扩展按钮，确认显示“已连接本机桥接服务”。
+Firefox Remote Agent 默认会应用一组自动化偏好。为保留普通浏览器行为，原生模式要求事先关闭这组自动调整。先预览唯一的配置改动：
 
-**临时扩展会在 Zen 完全退出后失效，需要重新加载。** GitHub Release 的 `*-unsigned.xpi` 也是未签名开发包，不能被当作已经签名的长期安装包。不要关闭签名校验；长期分发应按照 [Mozilla 签名流程](https://extensionworkshop.com/documentation/publish/signing-and-distribution-overview/) 对扩展签名。没有 AMO 发布者凭据时，仓库构建不会尝试代签。
+```powershell
+pwsh -NoProfile -File .\scripts\configure-native-profile.ps1 -ProfilePath "C:\完整路径\Zen配置"
+```
+
+确认选择的配置后，显式应用：
+
+```powershell
+pwsh -NoProfile -File .\scripts\configure-native-profile.ps1 -ProfilePath "C:\完整路径\Zen配置" -Apply
+```
+
+脚本仅在所选配置的 `user.js` 追加 `remote.prefs.recommended=false`，保存原内容和回滚收据；不更改扩展签名策略、主题或网页数据。默认预览不写文件，启动器也不会代为修改配置。
+
+### 4. 每次通过配套启动器打开 Zen
+
+```powershell
+pwsh -NoProfile -File .\scripts\start-zen.ps1 -ZenBinary "D:\Software\Zen Browser\zen.exe" -ProfilePath "C:\完整路径\Zen配置"
+```
+
+启动器使用这个原配置启动 Zen，打开仅本机回环地址的 BiDi 端口，核对浏览器进程与配置身份，再自动临时加载随包扩展。每次完全退出后仍通过此命令启动，便无需手动重新加载；同一配置中的登录状态保留。扩展面板和 `zen_status` 会显示原生模式是否可用。
+
+**直接点击普通 Zen 图标不会执行自动加载。** GitHub Release 的 XPI 仍是未签名开发包，启动器利用浏览器公开的临时安装接口加载，没有把它变成永久安装扩展。浏览器可能显示远程控制提示，这是启用 BiDi 后的浏览器行为。
+
+若只需要普通 DOM 模式，可以手动在 `about:debugging#/runtime/this-firefox` 中“临时载入附加组件”，选择 `extension/manifest.json`；不需要上面的配置步骤，但完全退出后需手动加载，真实输入和拖动不可用。
 
 完成后在 Codex 开一个新任务，使用 Zen Browser 插件。若只想注册独立 MCP，不使用插件市场，可以把真实绝对路径填入：
 
@@ -107,7 +127,8 @@ zen_status → zen_tabs → zen_attach / zen_open
 | `zen_open` / `zen_attach` / `zen_detach` | 新建、接管、释放 |
 | `zen_snapshot` | 页面文本、元素引用与 frame IDs |
 | `zen_click` / `zen_fill` / `zen_select` / `zen_check` | 网页元素操作 |
-| `zen_press` / `zen_scroll` | 有限键盘语义与滚动 |
+| `zen_press` / `zen_scroll` | 网页键盘语义与滚动 |
+| `zen_drag` | 将已观察的元素拖到同 frame 的视口坐标，需要原生模式 |
 | `zen_wait` / `zen_navigate` | 有条件等待与导航 |
 | `zen_screenshot` | 后台标签截图，直接返回 MCP 图像 |
 | `zen_close` | 关闭当前连接新建的后台标签 |
@@ -117,9 +138,12 @@ zen_status → zen_tabs → zen_attach / zen_open
 
 完整参数由 MCP `tools/list` 提供。工具不会执行任意页面 JavaScript，也不提供系统命令、cookie 导出或本地文件读取接口。
 
+`zen_click`、`zen_fill` 和 `zen_press` 的 `engine` 默认为 `auto`，原生模式可用时采用 BiDi；可明确选择 `native` 或 `dom`。超过 2000 字符、包含换行或控制字符的填写在执行前选择 DOM 字面替换，避免把换行当成 Enter 提交。明确指定 `native` 的这类输入会报错。原生动作已经开始后，失败不会自动降级、重试或重放。
+
 ## 明确的边界
 
-- 输入以 DOM 合成事件为主，不提供 CDP 的真实输入事件。拒绝 `isTrusted === false` 的控件、依赖真实用户激活的能力、Canvas 类编辑器，不保证可操作。
+- 原生模式已验证可触发只接受可信点击的测试控件，也能在后台输入中文和 Enter；这不保证所有用户激活 API、复杂编辑器或 Canvas 应用都兼容。普通 DOM 模式仍不能满足只接受可信输入的控件。
+- 原生输入沿用同样的文档、控制代数和一次性许可，输入前逐步检查停止状态。拖动手势最长 300 ms；已经发给浏览器的一次手势可能在停止期间完成。暂停不是撤销已经发生的网页操作。
 - 不控制地址栏、浏览器设置、原生弹窗、文件选择器，也不绕过验证码。closed shadow DOM 无法穿透。
 - `<a target="_blank">`、下载链接和会打开其他窗口的表单会返回明确错误。用 `zen_open` 打开已观察到的普通网页链接。
 - 网站自己的脚本、系统弹窗和其他扩展可能有独立行为。本插件不提供对任意网站的系统焦点绝对保证；实测覆盖与未验证项见 [验证记录](docs/VALIDATION.md)。
@@ -139,6 +163,10 @@ pwsh -NoProfile -File .\scripts\doctor.ps1
 - `CONTROL_STOPPED` / `CONTROL_CHANGED`：已暂停、接管或旧指令失效；等待用户继续，不重放旧指令。
 - `OBSERVATION_REQUIRED` / `NAVIGATION_CHANGED`：页面或控制状态已变化，读取新 snapshot 后重新判断。
 - `PAGE_LOADING`：等待页面完成导航，然后重新观察。
+- `PROFILE_SETUP_REQUIRED`：先检查指定配置，再使用配置脚本预览及明确应用；启动器没有修改配置。
+- `NATIVE_UNAVAILABLE`：没有通过启动器启动，或扩展仍在加载。普通 DOM 模式可以独立使用。
+- `NATIVE_SESSION_BUSY`：异常中断后浏览器保留了旧调试会话；正常关闭该配置后用启动器重新打开，不重试旧动作。
+- `INPUT_PROBE_UNAVAILABLE`：原生键盘来源检测程序不可用，重新安装宿主；不把无法判断的键盘输入当作成功。
 - `STALE_REF`：获取新的 snapshot。
 - `BROWSER_ERROR` / host permission：页面可能是 Firefox 限制页面、正在跳转，或网站访问权限被关闭。
 - 多个配置：从 `zen_status` 选择明确的 `connectionId`。
@@ -151,6 +179,14 @@ pwsh -NoProfile -File .\scripts\unregister-host.ps1 -Receipt "完整的 install-
 
 脚本只恢复这次安装的 Native Messaging 注册，保留宿主文件、收据和所有浏览器数据。它不会递归删除目录。扩展可以在 Zen 附加组件管理中单独移除，Codex 插件也可以独立停用。
 
+回滚原生模式的单项偏好时，先正常退出该配置，再使用配置脚本输出的收据：
+
+```powershell
+pwsh -NoProfile -File .\scripts\configure-native-profile.ps1 -ProfilePath "C:\完整路径\Zen配置" -RestoreReceipt "完整的 zen-native-setup-时间戳.json 路径" -Apply
+```
+
+脚本按字节恢复原 `user.js`，并恢复 `prefs.js` 中这一个偏好的原值，保留其他后续设置。若原本没有 `user.js`，留下空文件；若该文件在设置后被修改，脚本拒绝覆盖。
+
 ## 开发与复现测试
 
 ```powershell
@@ -160,12 +196,13 @@ npm test
 npm audit
 $env:ZEN_BINARY = 'D:\Software\Zen Browser\zen.exe'
 npm run test:zen
+npm run test:native
 npm run package
 ```
 
 实机测试需要 PowerShell 7。`ZEN_BINARY` 必须是实际 Zen；测试创建全新的配置，不读取或修改日常配置。测试期间只注册 `io.github.reasonw6.zen_browser_test`，结束后恢复原值。测试证据保存在 `.artifacts/`，不加入 Git。
 
-需要带窗口测试时设置 `ZEN_HEADED=1`。若要求 Windows 系统焦点采样必须可用，再设置 `ZEN_REQUIRE_FOREGROUND=1`；空窗口句柄必须报告未验证，不能算通过。
+需要带窗口测试时设置 `ZEN_HEADED=1`。若要求 Windows 系统焦点采样必须可用，再设置 `ZEN_REQUIRE_FOREGROUND=1`；空窗口句柄必须报告未验证，不能算通过。两套实机测试共用专用测试宿主注册，必须顺序运行。
 
 Mozilla 的扩展校验可单独执行：
 
@@ -177,6 +214,6 @@ npm exec --yes --package=web-ext@10.6.0 -- web-ext lint --source-dir extension
 
 ## 实现与数据
 
-见 [架构与权限说明](docs/ARCHITECTURE.md)。Windows 宿主只使用随机命名的本机管道与按用户保护的连接凭据，不监听 HTTP/TCP 服务。扩展返回的网页信息进入调用它的 Codex 任务；本项目没有独立云服务和遥测。不要把“本地桥接”误解成 Codex 本身完全离线。
+见 [架构与权限说明](docs/ARCHITECTURE.md)。MCP 与 Windows 宿主通过随机命名的本机管道和按用户保护的凭据通信。原生模式额外启用 Zen 的回环调试端口，调试接口具备浏览器级权限，本机其他进程可能访问它；没有绑定外部网卡。键盘来源辅助程序只提供事件次数和时间，不记录或传输按键内容。扩展返回的网页信息进入调用它的 Codex 任务；本项目没有独立云服务和遥测。不要把“本地桥接”误解成 Codex 本身完全离线。
 
 本插件按 [MIT License](LICENSE) 分发，与 OpenAI、Mozilla、Zen 官方没有隶属关系。

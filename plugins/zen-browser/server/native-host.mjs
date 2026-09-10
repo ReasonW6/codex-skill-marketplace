@@ -5,8 +5,9 @@ import { randomBytes, randomUUID, timingSafeEqual } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import { NativeDecoder, LineDecoder, nativeFrame, writeLine, failure } from './wire.mjs';
 import { connectionDir, dataHome } from './paths.mjs';
+import { NativeDriver } from './native-driver.mjs';
 
-export async function startHost({ input = process.stdin, output = process.stdout, home = dataHome() } = {}) {
+export async function startHost({ input = process.stdin, output = process.stdout, home = dataHome(), nativeDriver } = {}) {
   const id = randomUUID();
   const token = randomBytes(32).toString('hex');
   const dir = await connectionDir(home);
@@ -14,6 +15,7 @@ export async function startHost({ input = process.stdin, output = process.stdout
   const record = path.join(dir, `${id}.json`);
   const clients = new Set();
   const pending = new Map();
+  const native = nativeDriver ?? (process.env.ZEN_BROWSER_LAUNCH ? new NativeDriver({ file: process.env.ZEN_BROWSER_LAUNCH, home }) : null);
   let ready = false, closing = false;
   const send = message => output.write(nativeFrame(message));
   const server = net.createServer(socket => {
@@ -43,11 +45,12 @@ export async function startHost({ input = process.stdin, output = process.stdout
       const requestId = randomUUID();
       const timeout = Math.max(1000, Math.min(35000, Number(message.timeoutMs) || 15000));
       const timer = setTimeout(() => {
+        native?.cancel(requestId);
         pending.delete(requestId);
         send({ type: 'cancel', id: requestId, sessionId });
         writeLine(socket, { id: message.id, error: { code: 'TIMEOUT', message: 'Browser operation timed out; its outcome may be unknown. Observe before retrying a write.' } });
       }, timeout);
-      pending.set(requestId, { socket, clientId: message.id, timer });
+      pending.set(requestId, { socket, clientId: message.id, timer, sessionId, command: message.command, tabId: message.params?.tabId });
       try {
         send({ type: 'request', id: requestId, sessionId, command: message.command,
           params: message.params || {}, deadline: Date.now() + timeout - 100 });
@@ -61,6 +64,7 @@ export async function startHost({ input = process.stdin, output = process.stdout
     socket.on('close', () => {
       clients.delete(socket);
       for (const [requestId, item] of pending) if (item.socket === socket) {
+        native?.cancel(requestId);
         clearTimeout(item.timer); pending.delete(requestId);
         if (!closing) send({ type: 'cancel', id: requestId, sessionId });
       }
@@ -73,6 +77,7 @@ export async function startHost({ input = process.stdin, output = process.stdout
     if (closing) return;
     closing = true;
     for (const item of pending.values()) clearTimeout(item.timer);
+    await native?.close();
     pending.clear();
     for (const socket of clients) socket.destroy();
     server.close();
@@ -82,8 +87,22 @@ export async function startHost({ input = process.stdin, output = process.stdout
   decoder.on('message', message => {
     if (message.type === 'hello' && message.version === 1 && !ready) {
       ready = true;
-      const entry = { version: 1, id, pid: process.pid, endpoint, token, browser: message.browser, startedAt: new Date().toISOString() };
+      send({ type: 'native-ready', available: !!native });
+      const entry = { version: 1, id, pid: process.pid, endpoint, token, browser: message.browser, nativeInput: !!native, startedAt: new Date().toISOString() };
       writeFile(record, JSON.stringify(entry), { flag: 'wx', mode: 0o600 }).catch(error => { console.error(error.message); close(); });
+    } else if (message.type === 'native-cancel') {
+      native?.cancel(message.requestId);
+    } else if (message.type === 'native-request') {
+      const item = pending.get(message.requestId);
+      if (!native || !item || item.nativeStarted || item.sessionId !== message.sessionId || item.tabId !== message.tabId || item.command !== message.plan?.command ||
+          !['click','fill','press','drag'].includes(item.command)) {
+        send({ type: 'native-response', id: message.id, error: { code: 'NATIVE_NOT_AUTHORIZED', message: 'No active owned request authorizes this native operation.' } });
+        return;
+      }
+      item.nativeStarted = true;
+      native.execute(message.requestId, message.lease, message.plan, message.deadline)
+        .then(result => { if (!closing) send({ type: 'native-response', id: message.id, result }); })
+        .catch(error => { if (!closing) send({ type: 'native-response', id: message.id, error: failure(error) }); });
     } else if (message.type === 'response') {
       const item = pending.get(message.id);
       if (!item) return;

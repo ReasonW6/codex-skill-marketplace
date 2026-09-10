@@ -7,6 +7,8 @@ class ZenController {
     this.store = new ZenControlStore();
     this.pages = new Map();
     this.rpcs = new Map();
+    this.nativeRpcs = new Map();
+    this.nativeAvailable = false;
     this.cancelled = new Set();
     this.releasedSessions = new Set();
     this.enabled = true;
@@ -16,6 +18,8 @@ class ZenController {
     this.queues = new Map();
     this.saveQueue = Promise.resolve();
     this.retry = null;
+    api.windows.onRemoved?.addListener(() => this.syncWindows().catch(error => { this.lastError = error.message; }));
+    api.windows.onCreated?.addListener(() => { if (this.enabled && !this.port) this.connect(); });
     api.tabs.onActivated.addListener(({ tabId, windowId }) => {
       for (const record of this.store.records.values()) if (record.windowId === windowId || record.tabId === tabId) {
         record.selected = record.tabId === tabId;
@@ -45,8 +49,15 @@ class ZenController {
     });
   }
   error(code, message) { return Object.assign(new Error(message), { code }); }
+  async syncWindows() {
+    if ((await this.api.windows.getAll({ windowTypes: ['normal'] })).length) return;
+    const old = this.port; this.port = null; this.transportEpoch++;
+    clearTimeout(this.retry); this.failNative();
+    for (const record of this.store.disconnect(null, '浏览器窗口已关闭，控制已停止')) this.publish(record);
+    old?.disconnect();
+  }
   status() {
-    return { enabled: this.enabled, connected: !!this.port,
+    return { enabled: this.enabled, connected: !!this.port, nativeInput: this.nativeAvailable,
       controlledTabs: [...this.store.records.values()].filter(r => r.owner && ZenControlActive.has(r.state)).length,
       tabs: [...this.store.records.values()].map(r => this.store.public(r)), lastError: this.lastError };
   }
@@ -117,6 +128,7 @@ class ZenController {
       }
       const old = this.port;
       this.port = null;
+      this.failNative();
       old?.disconnect();
       for (const record of this.store.disconnect(null, '全局控制已暂停；重新连接后点击继续')) this.publish(record);
       await this.quiesce();
@@ -154,6 +166,7 @@ class ZenController {
         if (this.port !== port) return;
         this.lastError = port.error?.message || 'Native host disconnected.';
         this.port = null;
+        this.failNative();
         this.transportEpoch++;
         for (const record of this.store.disconnect()) this.publish(record);
         if (this.enabled) this.retry = setTimeout(() => this.connect(), 3000);
@@ -169,9 +182,18 @@ class ZenController {
     }
   }
   receive(message, port) {
+    if (message?.type === 'native-ready') { if (this.port === port) this.nativeAvailable = message.available === true; return; }
+    if (message?.type === 'native-response') {
+      const rpc = this.nativeRpcs.get(message.id);
+      if (!rpc) return;
+      this.nativeRpcs.delete(message.id); clearTimeout(rpc.timer);
+      if (message.error) rpc.reject(this.error(message.error.code, message.error.message)); else rpc.resolve(message.result);
+      return;
+    }
     if (message?.type === 'cancel') {
       this.cancelled.add(message.id);
-      const rpc = [...this.rpcs.values()].find(item => item.request.id === message.id);
+      const rpc = [...this.rpcs.values(), ...this.nativeRpcs.values()].find(item => item.request.id === message.id);
+      if (rpc && this.nativeRpcs.size) { try { this.port?.postMessage({ type: 'native-cancel', requestId: message.id }); } catch {} }
       const record = rpc && this.store.get(rpc.tabId);
       if (record) { this.store.interrupt(record, 'waiting_user', '指令已取消；已发生的动作不会撤销，请检查页面'); this.publish(record); }
       return;
@@ -300,7 +322,10 @@ class ZenController {
     });
   }
   async quiesce(tabId) {
-    const work = [...this.rpcs.values()].filter(rpc => tabId === undefined || rpc.tabId === tabId).map(rpc => rpc.promise);
+    for (const rpc of this.nativeRpcs.values()) if (tabId === undefined || rpc.tabId === tabId) {
+      try { this.port?.postMessage({ type: 'native-cancel', requestId: rpc.request.id }); } catch {}
+    }
+    const work = [...this.rpcs.values(), ...this.nativeRpcs.values()].filter(rpc => tabId === undefined || rpc.tabId === tabId).map(rpc => rpc.promise);
     await Promise.allSettled(work);
   }
   async userControl(tabId, action, reason) {
@@ -504,10 +529,11 @@ class ZenController {
         throw this.error('WAIT_TIMEOUT', 'The requested content did not appear.');
       } catch (error) { this.store.fail(record, record.stopEpoch === stopEpoch ? record.epoch : originalEpoch, number, error); this.publish(record); throw error; }
     }
-    const writes = ['click', 'fill', 'select', 'check', 'press', 'scroll', 'navigate', 'close'];
+    const writes = ['click', 'fill', 'select', 'check', 'press', 'scroll', 'navigate', 'close', 'drag'];
     if (!writes.includes(command)) throw this.error('UNKNOWN_COMMAND', 'Unknown browser command: ' + command);
     const { tab, record } = await this.eligible(p.tabId, request, { observed: true, frameId: p.frameId ?? 0 });
     const epoch = record.epoch, number = this.store.begin(record, command);
+    const literalDomFill = command === 'fill' && (p.text.length > 2000 || /[\u0000-\u001f\u007f\uE000-\uE05D]/u.test(p.text));
     this.publish(record);
     try {
       let result;
@@ -526,15 +552,46 @@ class ZenController {
         await this.api.tabs.remove(tab.id);
         this.store.records.delete(tab.id);
         result = { tabId: tab.id, closed: true };
+      } else if (['click','fill','press','drag'].includes(command) && (p.engine === 'native' || command === 'drag' || (p.engine !== 'dom' && this.nativeAvailable && !literalDomFill))) {
+        if (!this.nativeAvailable) throw this.error('NATIVE_UNAVAILABLE', 'Use the supplied Zen launcher to enable native input. No DOM fallback was executed.');
+        const prepared = await this.content('native_prepare', { ...p, action: command }, request, true);
+        const { lease, plan } = prepared;
+        await this.nativeInput(request, lease, plan);
+        if (record.epoch !== epoch) {
+          result = { native: true, dispatched: true, controlChanged: true };
+        } else result = await this.content('native_finish', { tabId: p.tabId, frameId: p.frameId, token: lease.token }, request);
       } else result = await this.content(command, p, request, true);
       this.store.end(record, epoch, number, result);
       this.publish(record);
       return { ...result, control: this.store.get(tab.id) ? this.store.public(record) : null };
     } catch (error) {
+      if (error.code === 'USER_INPUT') {
+        this.store.interrupt(record, 'user_control', '检测到你的实际键盘输入，原生输入已停止'); this.publish(record);
+      }
       this.store.fail(record, epoch, number, error);
       this.publish(record);
       throw error;
     }
+  }
+  async nativeInput(request, lease, plan) {
+    this.alive(request);
+    this.store.require(request.params.tabId, request.sessionId, request.tabEpoch, { observed: true, frameId: request.params.frameId ?? 0 });
+    const id = crypto.randomUUID(); let resolve, reject;
+    const promise = new Promise((yes, no) => { resolve = yes; reject = no; });
+    const timer = setTimeout(() => {
+      this.nativeRpcs.delete(id);
+      try { this.port?.postMessage({ type: 'native-cancel', requestId: request.id }); } catch {}
+      reject(this.error('NATIVE_TIMEOUT', 'Native input timed out; observe the page before another action.'));
+    }, Math.max(1, request.deadline - Date.now()));
+    this.nativeRpcs.set(id, { promise, resolve, reject, timer, request, tabId: request.params.tabId });
+    try { this.port.postMessage({ type: 'native-request', id, requestId: request.id, sessionId: request.sessionId, tabId: request.params.tabId, lease, plan, deadline: request.deadline }); }
+    catch (error) { this.nativeRpcs.delete(id); clearTimeout(timer); reject(error); }
+    return promise;
+  }
+  failNative() {
+    this.nativeAvailable = false;
+    for (const rpc of this.nativeRpcs.values()) { clearTimeout(rpc.timer); rpc.reject(this.error('NATIVE_DISCONNECTED', 'The native channel disconnected. Inspect the page before another action.')); }
+    this.nativeRpcs.clear();
   }
 }
 

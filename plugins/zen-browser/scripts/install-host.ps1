@@ -45,7 +45,7 @@ $buildHash = (Get-FileHash -LiteralPath (Join-Path $sourceRoot 'server\native-ho
 $stamp = Get-Date -Format 'yyyyMMdd-HHmmss-fff'
 $runtimePath = Join-Path $installPath "runtime\$version-$buildHash-$stamp"
 New-Item -ItemType Directory -Path $runtimePath | Out-Null
-foreach ($name in @('native-host.mjs', 'wire.mjs', 'paths.mjs')) {
+foreach ($name in @('native-host.mjs', 'wire.mjs', 'paths.mjs', 'bidi.mjs', 'native-driver.mjs')) {
     Copy-Item -LiteralPath (Join-Path $sourceRoot "server\$name") -Destination (Join-Path $runtimePath $name)
 }
 $utf8 = New-Object Text.UTF8Encoding($false)
@@ -55,6 +55,9 @@ if (-not (Test-Path -LiteralPath $compiler)) { $compiler = Join-Path $env:WINDIR
 if (-not (Test-Path -LiteralPath $compiler)) { throw 'The Windows .NET Framework C# compiler is required to build the native launcher.' }
 $compilerOutput = & $compiler /nologo /target:exe /optimize+ "/out:$launcher" (Join-Path $PSScriptRoot 'NativeLauncher.cs') 2>&1
 if ($LASTEXITCODE -ne 0) { throw "Native launcher compilation failed: $compilerOutput" }
+$probeExecutable = Join-Path $runtimePath 'zen-input-probe.exe'
+$probeOutput = & $compiler /nologo /target:exe /optimize+ "/out:$probeExecutable" (Join-Path $PSScriptRoot 'PhysicalInputProbe.cs') 2>&1
+if ($LASTEXITCODE -ne 0) { throw "Input provenance helper compilation failed: $probeOutput" }
 $launcherConfig = @($nodeExecutable, (Join-Path $runtimePath 'native-host.mjs'), $installPath) -join "`n"
 [IO.File]::WriteAllText((Join-Path $runtimePath 'launcher-paths.txt'), $launcherConfig, $utf8)
 $manifestPath = Join-Path $runtimePath "$HostName.json"
@@ -78,4 +81,4 @@ if ((Get-Item -LiteralPath $registryPath).GetValue('') -ne $manifestPath) { thro
 Write-Output "Installed native host for $($identity.Name)."
 Write-Output "Manifest: $manifestPath"
 Write-Output "Rollback receipt: $receiptPath"
-Write-Output 'Load extension/manifest.json as a temporary add-on in Zen about:debugging, or install a Mozilla-signed XPI for persistent use.'
+Write-Output 'Use scripts/start-zen.ps1 to load the unsigned extension automatically at startup, or load extension/manifest.json manually in about:debugging.'
