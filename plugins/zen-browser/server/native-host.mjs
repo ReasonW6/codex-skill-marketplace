@@ -88,7 +88,8 @@ export async function startHost({ input = process.stdin, output = process.stdout
     if (message.type === 'hello' && message.version === 1 && !ready) {
       ready = true;
       send({ type: 'native-ready', available: !!native });
-      const entry = { version: 1, id, pid: process.pid, endpoint, token, browser: message.browser, nativeInput: !!native, startedAt: new Date().toISOString() };
+      const entry = { version: 1, id, pid: process.pid, endpoint, token, browser: message.browser, nativeInput: !!native,
+        extensionVersion: message.extensionVersion, launchRecord: process.env.ZEN_BROWSER_LAUNCH, startedAt: new Date().toISOString() };
       writeFile(record, JSON.stringify(entry), { flag: 'wx', mode: 0o600 }).catch(error => { console.error(error.message); close(); });
     } else if (message.type === 'native-cancel') {
       native?.cancel(message.requestId);

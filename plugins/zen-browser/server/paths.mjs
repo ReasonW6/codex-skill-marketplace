@@ -5,7 +5,7 @@ import { mkdir, readdir, readFile } from 'node:fs/promises';
 export const EXTENSION_ID = 'zen-browser@reasonw6.github.io';
 export const HOST_NAME = 'io.github.reasonw6.zen_browser';
 export function dataHome() {
-  return process.env.ZEN_BRIDGE_HOME || path.join(process.env.LOCALAPPDATA || path.join(os.homedir(), '.local', 'share'), 'ReasonW6', 'ZenBrowser');
+  return process.env.ZEN_BRIDGE_HOME || path.join(os.homedir(), '.zen-browser');
 }
 export async function connectionDir(home = dataHome()) {
   const dir = path.join(home, 'connections');

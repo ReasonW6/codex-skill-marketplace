@@ -2,7 +2,10 @@
 
 ```mermaid
 flowchart LR
-    C[Codex MCP client] <-->|stdio JSON-RPC| M[Node MCP server]
+    C[Codex MCP client] <-->|stdio JSON-RPC| M[Bundled Node MCP server]
+    U[Connect Zen MCP App] <-->|preview and confirmed apply| M
+    M <-->|one-use local pipe| W[Windows desktop helper]
+    W -->|discovery and confirmed setup| Z
     M <-->|authenticated local named pipe| N[Node native host]
     N <-->|binary stdio via hidden launcher| E[Zen WebExtension]
     E <-->|document ports and execution permits| P[controlled pages: background or watched]
@@ -44,17 +47,45 @@ flowchart LR
 
 浏览器级 BiDi 会话使用一条连接。正常关闭最后一个浏览器窗口或暂停全部控制时结束原生会话；异常杀死宿主可能使浏览器留下旧会话，此时明确报告 `NATIVE_SESSION_BUSY`，通过正常关闭配置并重新启动恢复，不自动复用失去归属的动作。
 
-## Windows 启动器
+## 连接页与本机操作
 
-Firefox Native Messaging 使用长度前缀的二进制 JSON。`scripts/NativeLauncher.cs` 是很小的无窗口启动器，把原生 stdin/stdout 与 Node 子进程的二进制流互相转发，每次写入后刷新，不等待缓冲区填满。它不使用 `cmd.exe` 或字符串命令求值，支持中文、空格、百分号路径。
+`server/connection-manager.mjs` 管理发现、用户选择、一次性确认、连接状态、重试和收据回滚。`profiles.ini` 中的配置与安装默认项是只读发现来源；依次考虑已确认的选择、唯一正在使用的配置和无歧义的默认配置。只有无法可靠区分候选时才要求选择。初始化、工具发现和连接页检测均不创建安装目录，不改配置或注册表。
 
-安装时用 Windows 自带的 .NET Framework 编译器生成启动器；程序和浏览器 XPI 均未做代码签名。安装器只写当前用户的一个 Native Messaging 注册项，记录前值及具体路径；卸载脚本只恢复匹配的本次注册，保留文件。
+`ui/connection.html` 是 `text/html;profile=mcp-app` 资源，使用 MCP Apps 的 JSON-RPC postMessage 与 Codex 通信。`zen_connection` 返回公开状态和仅供 UI 的 `_meta`。预览、确认、继续和取消工具声明 `visibility: ["app"]`；确认票据只通过 `_meta` 交给 UI，一次使用、五分钟有效。确认后再次核对配置目录清单、文件锁、进程开始时间、浏览器路径和原生宿主注册；改变就要求重新确认。
 
-`scripts/start-zen.ps1` 调用 `server/launch-zen.mjs` 启动明确指定的已有配置。启动前检查配置锁和 `remote.prefs.recommended=false`，不会结束现有浏览器进程。使用 `--remote-debugging-port` 创建仅回环地址的端口，核对 BiDi 报告的配置、进程 ID、二进制路径和 Windows 父进程，再通过 `webExtension.install` 临时加载随包扩展。浏览器原启动器和实际子进程分开验证。
+工具可见性与 `_meta` 隔离由支持 MCP Apps 的宿主实现，不是针对恶意本机 MCP 客户端的独立安全边界。当前 Codex 的全局、设置和任务入口元数据经过本地代码核实，实际后端和 UI 资源经过集成测试；桌面外壳本身的点击验证范围见验收文档。
 
-启动记录保存在受用户 ACL 保护的宿主目录，路径通过 `ZEN_BROWSER_LAUNCH` 传给该浏览器及其 native host。driver 拒绝其他目录、外部主机和其他配置。原生端口本身仍是高权限浏览器调试接口，本机其他进程可能访问；本插件的管道认证和文档许可不为浏览器的调试端口提供额外认证。没有启用 `--remote-allow-system-access`。
+客户端未声明 MCP Apps 时，`zen_connection` 启动仅监听 `127.0.0.1` 的临时连接页，并返回可点击链接。`server/connection-page.mjs` 复用相同 HTML 和 `invokeConnectionTool`，不复制另一套设置逻辑。初始化和工具发现不启动这个 HTTP 服务；打开链接前后都不写配置。页面通过每次随机生成的 256 位路径、严格 Host/Origin 校验、请求类型与大小限制隔离请求；只允许连接工具，不转发网页操作。CSP 限制脚本及 frame 来源，禁止跨站嵌套主页面，不加载远程资源，不发送 Referer。进程结束关闭服务，浏览器连接保持独立。
 
-`scripts/configure-native-profile.ps1` 默认只预览。显式 `-Apply` 仅追加 `remote.prefs.recommended=false`，防止 Remote Agent 自动应用其他偏好，同时保存可回滚收据。回滚验证原文件未被后续修改，按字节恢复 `user.js`，并只恢复 `prefs.js` 中这一个偏好，保留其他设置。本项目没有 Mozilla 签名步骤，也没有关闭签名检查的设置；自动加载依赖每次使用配套启动器。
+UI 显示未连接、连接中、已连接和连接失败。确认页支持键盘焦点隔离、Escape 返回、窄屏及深浅色；异步检测的旧结果不会覆盖新选择。停止等待不会强杀浏览器或删除已经准备的文件。首次引导由用户在 Zen 完成；遇到窗口未激活导致启动握手等待时，页面要求用户点击 Zen 窗口，再继续连接。不会把这种路径标成零交互启动。
+
+## Windows 桌面与稳定运行时
+
+`.mcp.json` 让 Codex 从插件根目录执行 `./runtime/node.exe server/mcp.mjs`。Node 24.21.0 Windows x64、三个预编译 .NET Framework 助手及许可证随包提供；用户不下载运行时、不运行 PowerShell 或编译器。
+
+`server/windows.mjs` 创建随机命名本机管道和 256 位 nonce，再让原生助手通过标准 Explorer 桌面激活方式启动自身的单次工作进程。工作进程先证明 nonce，随后才接收一条有界 JSON 请求。检测不落地请求文件；注册、检查、回滚和浏览器启动使用与 Zen 一致的桌面注册表视图。这修复了打包 Codex 子进程与正常浏览器可能看到不同 HKCU 值的问题，无需修改系统的虚拟化或安全设置。
+
+配置清单、连接偏好、首次引导状态和会话文件状态也由该只读桌面进程读取，MCP 不依赖自己的 AppData 视图来判断实际 Zen 配置。确认后会重新核对连接偏好；发生改变时要求重新确认。
+
+分发助手只允许激活自己的可执行文件，不接受任意命令。操作层仅支持已实现的动作和固定宿主名；正常用户检查拒绝专用沙盒账户。当前用户级连接互斥锁串行化准备流程，桌面操作还有独立的设置互斥锁，确保 Codex 退出时尚未结束的操作不会与下次设置同时写入。
+
+安装先校验随包文件，随后在 `%USERPROFILE%\.zen-browser` 写准备收据和独立版本目录。目录 ACL 限当前用户、SYSTEM 与管理员。程序记录原生注册旧值、复制文件哈希、版本和前一版收据。即使复制中断，仍有可识别的准备记录用于重试；不会覆盖归属不明的非空目录。使用用户目录中的稳定位置，也避免打包应用与桌面的 AppData 文件虚拟化差异。
+
+`scripts/NativeLauncher.cs` 是原生通信的无窗口启动器，将长度前缀二进制 JSON stdin/stdout 与固定 Node 子进程互相转发，不使用 cmd.exe 或字符串命令求值。中文、空格和百分号路径经过测试。宿主和网页控制保持原有的管道认证与文档许可规则。
+
+## 浏览器启动、退出与恢复
+
+用户确认后，必要时通过 Windows Restart Manager 请求精确 PID 与创建时间对应的实例正常退出，从不使用 RmForceShutdown。不能证明进程与所选配置的关联，或浏览器没有完成退出时，连接页等待用户正常退出。旧实例和配置锁均释放后才能继续；仅文件锁暂时可用不等于实例已彻底结束。
+
+配置准备仅为所选 `user.js` 追加带唯一标记的 `remote.prefs.recommended=false`，防止 Remote Agent 批量调整其他偏好。需要保留会话时，在 `prefs.js` 请求一次性恢复并记录原值。恢复移除本次标记块，恢复所记录偏好，同时保留无关的用户修改；不会改主题、签名校验、默认浏览器或快捷方式。
+
+`server/launch-zen.mjs` 使用 `--new-instance --profile` 打开同一配置，分配回环控制端口，核对 BiDi 返回的配置、进程 ID、二进制和父进程，再用 `webExtension.install` 临时加载随包扩展。桌面激活使浏览器不属于 Codex MCP 的关闭即终止进程树；关闭 Codex 只结束控制客户端，不结束 Zen。
+
+已准备配置完全退出后，连接页自动负责再次启动和加载，不要求用户记住专用命令。普通 Zen 图标仍是普通启动方式，未加载的控制通道需要经过新的重启确认。临时扩展不是永久安装。完整退出清除旧控制会话，新 MCP 连接不能重用原有写入许可。
+
+受保护的启动记录通过 `ZEN_BROWSER_LAUNCH` 传给该实例和其 native host。driver 拒绝其他目录、外部主机和其他配置。原生端口仍是高权限浏览器调试接口，本机其他进程可能访问；插件自己的管道认证不为该端口添加额外认证。没有启用 `--remote-allow-system-access`。
+
+回滚使用当前安装收据并核对当前注册，必要时沿同一安装的升级收据链恢复原值；若注册已被外部程序更改则保留外部更改。多个配置仍依赖宿主时保留通信注册。宿主文件、浏览器数据和收据不递归删除。旧版手动脚本和旧收据的边界见 [开发文档](DEVELOPMENT.md)。
 
 ## 权限用途
 
@@ -73,14 +104,17 @@ Firefox Native Messaging 使用长度前缀的二进制 JSON。`scripts/NativeLa
 
 ## 平台与能力差异
 
-本实现使用公开 Firefox WebExtension 和 WebDriver BiDi API，不借用官方 Chrome 扩展 ID，不调用 OpenAI 私有浏览器协议。普通模式不启用调试端口；原生模式仅针对用户明确用启动器打开的配置启用 BiDi。实际验收全部使用独立配置，日常浏览器配置没有被修改。
+本实现使用公开 Firefox WebExtension 和 WebDriver BiDi API，不借用官方 Chrome 扩展 ID，不调用 OpenAI 私有浏览器协议。普通模式不启用调试端口；原生模式仅针对用户在连接页明确确认的配置启用 BiDi。实际验收全部使用独立配置，日常浏览器配置没有被修改。
 
 原生模式已测试后台可信点击、中文键盘输入、Enter 和拖动，但不保证所有网站的用户激活能力。原生对话框、浏览器内部页面、closed shadow DOM、文件上传等能力未实现。原生组的外观由 Zen 决定，不能通过普通扩展任意定制。当前版本不声明完整官方插件等价性。
 
 ## 参考依据
 
 - [OpenAI 插件打包](https://developers.openai.com/plugins/build/plugins)
-- [Codex MCP 插件配置解析源码](https://github.com/openai/codex/blob/main/codex-rs/codex-mcp/src/plugin_config.rs)，相对 `cwd` 在插件根目录下解析。
+- [Codex MCP 插件配置解析源码](https://github.com/openai/codex/blob/rust-v0.153.4/codex-rs/codex-mcp/src/plugin_config.rs)，相对 `cwd` 在插件根目录下解析。
+- [OpenAI MCP Apps UI 文档](https://developers.openai.com/plugins/build/chatgpt-ui)
+- [Codex Windows MCP 进程生命周期](https://github.com/openai/codex/blob/rust-v0.153.4/codex-rs/rmcp-client/src/stdio_server_launcher.rs)
+- [Microsoft 从桌面激活进程的标准模式](https://devblogs.microsoft.com/oldnewthing/20131118-00/?p=2643)
 - [Mozilla Native Messaging](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/Native_messaging)
 - [Firefox tabs.captureTab](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/captureTab)
 - [Firefox tabs.create](https://developer.mozilla.org/en-US/docs/Mozilla/Add-ons/WebExtensions/API/tabs/create)

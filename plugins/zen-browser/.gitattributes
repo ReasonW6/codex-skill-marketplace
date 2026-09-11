@@ -2,3 +2,5 @@
 *.png binary
 *.xpi binary
 *.zip binary
+*.exe binary
+runtime/LICENSE.node.txt binary

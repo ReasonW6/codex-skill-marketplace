@@ -1,234 +1,561 @@
 {
-  "pluginVersion": "0.3.0",
-  "validatedAt": "2026-09-10T02:40:06.728Z",
+  "pluginVersion": "0.4.0",
+  "validatedAt": "2026-09-11T07:12:17.104327+00:00",
   "environment": {
-    "os": "Windows",
+    "os": "Windows x64",
     "zen": "1.22b",
-    "geckoUserAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:155.0) Gecko/20100101 Firefox/155.0",
-    "buildId": "20260904060728",
-    "node": "v24.13.1",
-    "mode": "headed-hidden",
-    "isolatedProfile": true
+    "gecko": "155.0.1",
+    "codex": "0.153.4",
+    "bundledNode": "24.21.0"
   },
   "unitTests": {
-    "passed": 55,
+    "passed": 78,
     "failed": 0,
     "skipped": 0
   },
   "syntax": {
     "passed": true,
-    "files": 34
+    "files": 45,
+    "bundledRuntimeAndHelperSourceHashesChecked": true
   },
-  "zenIntegration": {
-    "passed": true,
-    "count": 57,
-    "checks": [
-      "Zen loads the real WebExtension",
-      "MCP starts from the shipped configuration",
-      "native messaging and authenticated local pipe connect",
-      "all 20 MCP tools are discoverable",
-      "AI tab is created in the background",
-      "controlled tab has a native group or an explicit title fallback",
-      "tab title displays a real AI state",
-      "page observation does not expose password values or control buttons",
-      "background DOM operations change the actual form and result",
-      "synthetic Enter retains real form submission semantics",
-      "background work preserves the other tab focus, text and selection",
-      "foreground typing continues while AI writes elsewhere",
-      "browser-generated editing events do not cause false takeover",
-      "open shadow DOM still works in the background",
-      "cross-origin frame observations and actions remain isolated",
-      "background screenshot contains the real controlled page",
-      "existing browser login session is retained",
-      "React controlled inputs still update application state",
-      "Windows foreground stays unchanged during background operations",
-      "clicking the AI tab enters watching without losing control",
-      "page control UI is isolated in a closed shadow root",
-      "physical hover does not take over",
-      "watched fill and click update the actual page",
-      "visible native editing events are attributed to the active AI operation",
-      "consecutive watched steps continue without a false takeover",
-      "Windows foreground stays unchanged during watching operations",
-      "running status is driven by an actual pending command",
-      "collapsed controls still expose pause and takeover",
-      "page pause cancels an outstanding wait",
-      "immediate Continue does not replay an already-queued write",
-      "Continue requires a fresh observation",
-      "actual page click and typing take over without swallowing user input",
-      "Continue wakes the waiting MCP call with a fresh observation of user edits",
-      "keyboard input alone takes over an AI-focused input",
-      "actual content drag takes over before further AI writes",
-      "physical input in a cross-origin iframe takes over the whole tab",
-      "tab marking preserves dynamic site titles",
-      "an actual failed operation produces a failed UI state",
-      "stale refs are rejected after a new observation",
-      "invalid target remains blocked: ELEMENT_DISABLED",
-      "invalid target remains blocked: ELEMENT_COVERED",
-      "invalid target remains blocked: NEW_TAB_LINK",
-      "invalid target remains blocked: UNSUPPORTED_FILE_INPUT",
-      "synthetic click does not claim trusted-only page behavior",
-      "agent-declared need for user action is displayed accurately",
-      "refresh preserves a human pause and restores the page controls",
-      "navigation invalidates old page observations",
-      "navigation and history rebuild the live UI and keep watching",
-      "a second MCP connection cannot control the watched tab",
-      "extension popup lists the real task and current state",
-      "global pause disconnects native control",
-      "native bridge reconnects with a new connection identity",
-      "reconnection and reattachment do not bypass the stopped state",
-      "explicit task completion retains the actual result page",
-      "completed is shown in the page and tab title",
-      "the native tab favicon reaches the completed state",
-      "native Zen tab group displays the actual completion state"
-    ]
-  },
-  "nativeIntegration": {
-    "passed": true,
-    "count": 25,
-    "checks": [
-      "production launcher automatically loads the unsigned extension",
-      "MCP discovers native mode from the launched browser",
-      "the actual MCP click produces trusted page behavior",
-      "native MCP input keeps its tab in the background",
-      "native typing replaces text with real keyboard input",
-      "native form input and submission update the application",
-      "native background work preserves front focus, text and selection",
-      "native events are not falsely classified as takeover",
-      "multiline fill remains literal and cannot press Enter to submit",
-      "native input binds to the exact iframe document",
-      "identical URLs cannot confuse native target identity",
-      "Windows foreground preserved during native-background",
-      "selecting the tab enters watching without changing ownership",
-      "watching retains control during trusted typing and Enter",
-      "continuous watched input remains owned and complete",
-      "Windows foreground preserved during native-watching",
-      "pause stops native typing before the remaining characters",
-      "Continue cannot replay an old queued native write",
-      "actual page input still takes over native mode",
-      "native drag reaches the page without a false takeover",
-      "another MCP connection cannot take the native tab",
-      "native completion retains the real result page",
-      "a restart automatically reloads the unsigned extension",
-      "restarting the same profile preserves its login session",
-      "native input reconnects after browser restart"
-    ],
-    "automaticTemporaryLoad": true,
-    "sameProfileLoginRetainedAfterRestart": true
-  },
-  "windowsForeground": {
-    "passed": true,
-    "samples": 99,
-    "phases": [
-      {
-        "phase": "background",
-        "samples": 35,
-        "uniqueNonzeroWindows": 1
-      },
-      {
-        "phase": "watching",
-        "samples": 28,
-        "uniqueNonzeroWindows": 1
-      },
-      {
-        "phase": "native-background",
-        "samples": 16,
-        "uniqueNonzeroWindows": 1
-      },
-      {
-        "phase": "native-watching",
-        "samples": 20,
-        "uniqueNonzeroWindows": 1
-      }
-    ]
-  },
-  "nativeTabMarking": {
-    "strategy": "native-group-and-title",
-    "completedGroups": [
-      {
-        "label": "AI · 已完成",
-        "color": "green"
-      }
-    ],
-    "completedFavicon": true
-  },
-  "testRegistrationRestored": true,
-  "extensionLint": {
-    "tool": "web-ext 10.6.0",
+  "webExtLint": {
+    "version": "10.6.0",
     "errors": 0,
     "warnings": 0,
-    "notices": 0,
-    "updateCheck": "Config-store permission notice; extension validation passed without changing permissions."
-  },
-  "pluginAndSkillValidation": {
-    "passed": true
+    "notices": 0
   },
   "dependencyAudit": {
-    "totalVulnerabilities": 0,
-    "runtimeThirdPartyDependencies": 0
+    "vulnerabilities": 0,
+    "runtimeNpmDependencies": 0
   },
-  "scope": {
+  "flows": {
+    "mcpApps": {
+      "mode": "existing",
+      "view": "MCP App resource in test host",
+      "startedAt": "2026-09-11T07:07:50.838Z",
+      "finishedAt": "2026-09-11T07:10:52.638Z",
+      "fixture": {
+        "isolatedProfiles": true,
+        "targetProfileInitiallyEmpty": false,
+        "targetDebuggingPreconfigured": false,
+        "uiHarnessUsesSeparateMarionetteProfile": true,
+        "existingProfilePreferences": {
+          "zen.welcome-screen.seen": true,
+          "browser.tabs.warnOnClose": false,
+          "browser.shell.checkDefaultBrowser": false,
+          "browser.startup.page": 3,
+          "zen.test.existing-user-setting": "preserve this value"
+        },
+        "existingUserTabPreparedWithMarionetteThenBrowserFullyExited": true,
+        "upgradeVersion": "0.4.1 test-only package"
+      },
+      "checks": [
+        "the existing-user fixture is closed and contains no bridge setup preference",
+        "the existing profile starts without remote debugging or a bridge and establishes a real HttpOnly session",
+        "actual Codex discovers the bundled MCP with global Node and PowerShell absent from PATH",
+        "Codex explicitly passes the isolated test scope before any mutation",
+        "opening connection UI performs no installation or profile preference writes",
+        "a single existing profile is selected without a path prompt",
+        "first Connect click shows real setup confirmation before any write",
+        "the already running profile is discovered and its necessary restart is explicitly shown",
+        "confirmation isolates background controls and starts with keyboard focus on approval",
+        "Tab stays inside the confirmation dialog",
+        "Escape cancels the preview and returns keyboard focus without applying settings",
+        "the dark 320px connection dialog fits without horizontal overflow",
+        "first installation and connection finish through the actual UI without internal script execution",
+        "native host uses its own stable bundled runtime",
+        "only the explicit connection preference is added to user.js",
+        "connection reopens exactly the existing profile and preserves its prior preferences",
+        "the existing user tab is restored after the confirmed normal restart",
+        "AI receives a new owned background tab in the existing browser window",
+        "the connection enables real trusted background input",
+        "the AI tab uses the same persisted HttpOnly login session",
+        "closing the actual Codex app-server leaves the connected Zen running",
+        "restarting Codex rediscovers the same live browser without setup or a Zen restart",
+        "a fully exited Zen is reported as disconnected",
+        "an unchanged prepared profile reconnects after full exit with one Connect click",
+        "full browser exit and reconnect preserve the existing login session",
+        "opening Zen normally again reports the necessary reviewed restart",
+        "normal Zen startup reconnects through the UI without a special user command",
+        "a damaged installed component shows a concrete failure and a working retry",
+        "retry repairs the component and reconnects without manual setup",
+        "an actual Codex plugin version update detects the old live extension",
+        "the confirmed upgrade loads the new extension using a new stable runtime",
+        "UI rollback restores the original user preferences and pre-install registration across upgrades",
+        "two ambiguous profiles require a user choice instead of silently choosing one",
+        "choosing a discovered profile enables connection without a path prompt"
+      ],
+      "confirmations": [
+        {
+          "stage": "first-connect",
+          "text": "连接需要重新打开 Zen\n\nZen 1.22b · 连接验收\n\n为当前 Windows 账户准备随包通信组件；不需要管理员权限或另装运行时。\n关闭 Firefox 的自动化偏好批量调整，避免它替你改变其他浏览器设置；此项可回滚。\n为所选 Zen 启用仅本机可访问的浏览器控制通道，并自动加载未签名扩展；不更改扩展签名校验。\n请先保存未提交内容。确认后请求这个 Zen 实例正常退出，再打开并恢复会话；不会强制结束进程。\n允许并重新连接\n返回",
+          "automatedClicks": [
+            "连接 Zen",
+            "允许并连接"
+          ]
+        },
+        {
+          "stage": "ordinary-start-after-full-exit",
+          "text": "连接需要重新打开 Zen\n\nZen 1.22b · 连接验收\n\n为所选 Zen 启用仅本机可访问的浏览器控制通道，并自动加载未签名扩展；不更改扩展签名校验。\n请先保存未提交内容。确认后请求这个 Zen 实例正常退出，再打开并恢复会话；不会强制结束进程。\n允许并重新连接\n返回"
+        },
+        {
+          "stage": "repair-damaged-component",
+          "text": "连接需要重新打开 Zen\n\nZen 1.22b · 连接验收\n\n为当前 Windows 账户准备随包通信组件；不需要管理员权限或另装运行时。\n为所选 Zen 启用仅本机可访问的浏览器控制通道，并自动加载未签名扩展；不更改扩展签名校验。\n请先保存未提交内容。确认后请求这个 Zen 实例正常退出，再打开并恢复会话；不会强制结束进程。\n允许并重新连接\n返回"
+        },
+        {
+          "stage": "plugin-version-upgrade",
+          "text": "连接需要重新打开 Zen\n\nZen 1.22b · 连接验收\n\n为当前 Windows 账户准备随包通信组件；不需要管理员权限或另装运行时。\n为所选 Zen 启用仅本机可访问的浏览器控制通道，并自动加载未签名扩展；不更改扩展签名校验。\n请先保存未提交内容。确认后请求这个 Zen 实例正常退出，再打开并恢复会话；不会强制结束进程。\n允许并重新连接\n返回"
+        },
+        {
+          "stage": "rollback",
+          "text": "恢复连接前的设置\n\nZen 1.22b · 连接验收\n\n恢复这个配置由本插件添加的连接偏好，保留其他设置与网页数据。\n如果没有其他配置使用通信组件，恢复安装前的通信注册。文件和回滚记录会保留。\n请先保存未提交内容。确认后请求这个 Zen 实例正常退出，再恢复设置；之后可以按平常方式重新打开。\n确认恢复\n返回"
+        }
+      ],
+      "testRegistrationRestored": true,
+      "productionRegistrationUnchanged": true,
+      "otherBrowsersPreserved": true,
+      "passed": true,
+      "count": 34,
+      "localEvidenceDirectory": "connection-flow-1789110470838"
+    },
+    "localPage": {
+      "mode": "existing",
+      "view": "production local page, MCP Apps disabled",
+      "startedAt": "2026-09-11T06:26:36.147Z",
+      "finishedAt": "2026-09-11T06:29:42.435Z",
+      "fixture": {
+        "isolatedProfiles": true,
+        "targetProfileInitiallyEmpty": false,
+        "targetDebuggingPreconfigured": false,
+        "uiHarnessUsesSeparateMarionetteProfile": true,
+        "existingProfilePreferences": {
+          "zen.welcome-screen.seen": true,
+          "browser.tabs.warnOnClose": false,
+          "browser.shell.checkDefaultBrowser": false,
+          "browser.startup.page": 3,
+          "zen.test.existing-user-setting": "preserve this value"
+        },
+        "existingUserTabPreparedWithMarionetteThenBrowserFullyExited": true,
+        "upgradeVersion": "0.4.1 test-only package"
+      },
+      "checks": [
+        "the existing-user fixture is closed and contains no bridge setup preference",
+        "the existing profile starts without remote debugging or a bridge and establishes a real HttpOnly session",
+        "actual Codex discovers the bundled MCP with global Node and PowerShell absent from PATH",
+        "Codex without MCP Apps receives a real loopback connection page",
+        "Codex explicitly passes the isolated test scope before any mutation",
+        "opening connection UI performs no installation or profile preference writes",
+        "a single existing profile is selected without a path prompt",
+        "first Connect click shows real setup confirmation before any write",
+        "the already running profile is discovered and its necessary restart is explicitly shown",
+        "confirmation isolates background controls and starts with keyboard focus on approval",
+        "Tab stays inside the confirmation dialog",
+        "Escape cancels the preview and returns keyboard focus without applying settings",
+        "the dark 320px connection dialog fits without horizontal overflow",
+        "first installation and connection finish through the actual UI without internal script execution",
+        "native host uses its own stable bundled runtime",
+        "only the explicit connection preference is added to user.js",
+        "connection reopens exactly the existing profile and preserves its prior preferences",
+        "the existing user tab is restored after the confirmed normal restart",
+        "AI receives a new owned background tab in the existing browser window",
+        "the connection enables real trusted background input",
+        "the AI tab uses the same persisted HttpOnly login session",
+        "closing the actual Codex app-server leaves the connected Zen running",
+        "restarting Codex rediscovers the same live browser without setup or a Zen restart",
+        "a fully exited Zen is reported as disconnected",
+        "an unchanged prepared profile reconnects after full exit with one Connect click",
+        "full browser exit and reconnect preserve the existing login session",
+        "opening Zen normally again reports the necessary reviewed restart",
+        "normal Zen startup reconnects through the UI without a special user command",
+        "a damaged installed component shows a concrete failure and a working retry",
+        "retry repairs the component and reconnects without manual setup",
+        "an actual Codex plugin version update detects the old live extension",
+        "the confirmed upgrade loads the new extension using a new stable runtime",
+        "UI rollback restores the original user preferences and pre-install registration across upgrades",
+        "two ambiguous profiles require a user choice instead of silently choosing one",
+        "choosing a discovered profile enables connection without a path prompt"
+      ],
+      "confirmations": [
+        {
+          "stage": "first-connect",
+          "text": "连接需要重新打开 Zen\n\nZen 1.22b · 连接验收\n\n为当前 Windows 账户准备随包通信组件；不需要管理员权限或另装运行时。\n关闭 Firefox 的自动化偏好批量调整，避免它替你改变其他浏览器设置；此项可回滚。\n为所选 Zen 启用仅本机可访问的浏览器控制通道，并自动加载未签名扩展；不更改扩展签名校验。\n请先保存未提交内容。确认后请求这个 Zen 实例正常退出，再打开并恢复会话；不会强制结束进程。\n允许并重新连接\n返回",
+          "automatedClicks": [
+            "连接 Zen",
+            "允许并连接"
+          ]
+        },
+        {
+          "stage": "ordinary-start-after-full-exit",
+          "text": "连接需要重新打开 Zen\n\nZen 1.22b · 连接验收\n\n为所选 Zen 启用仅本机可访问的浏览器控制通道，并自动加载未签名扩展；不更改扩展签名校验。\n请先保存未提交内容。确认后请求这个 Zen 实例正常退出，再打开并恢复会话；不会强制结束进程。\n允许并重新连接\n返回"
+        },
+        {
+          "stage": "repair-damaged-component",
+          "text": "连接需要重新打开 Zen\n\nZen 1.22b · 连接验收\n\n为当前 Windows 账户准备随包通信组件；不需要管理员权限或另装运行时。\n为所选 Zen 启用仅本机可访问的浏览器控制通道，并自动加载未签名扩展；不更改扩展签名校验。\n请先保存未提交内容。确认后请求这个 Zen 实例正常退出，再打开并恢复会话；不会强制结束进程。\n允许并重新连接\n返回"
+        },
+        {
+          "stage": "plugin-version-upgrade",
+          "text": "连接需要重新打开 Zen\n\nZen 1.22b · 连接验收\n\n为当前 Windows 账户准备随包通信组件；不需要管理员权限或另装运行时。\n为所选 Zen 启用仅本机可访问的浏览器控制通道，并自动加载未签名扩展；不更改扩展签名校验。\n请先保存未提交内容。确认后请求这个 Zen 实例正常退出，再打开并恢复会话；不会强制结束进程。\n允许并重新连接\n返回"
+        },
+        {
+          "stage": "rollback",
+          "text": "恢复连接前的设置\n\nZen 1.22b · 连接验收\n\n恢复这个配置由本插件添加的连接偏好，保留其他设置与网页数据。\n如果没有其他配置使用通信组件，恢复安装前的通信注册。文件和回滚记录会保留。\n请先保存未提交内容。确认后请求这个 Zen 实例正常退出，再恢复设置；之后可以按平常方式重新打开。\n确认恢复\n返回"
+        }
+      ],
+      "testRegistrationRestored": true,
+      "productionRegistrationUnchanged": true,
+      "otherBrowsersPreserved": true,
+      "passed": true,
+      "count": 35,
+      "localEvidenceDirectory": "connection-flow-1789107996146"
+    },
+    "freshOnboarding": {
+      "mode": "fresh",
+      "view": "MCP App resource in test host",
+      "startedAt": "2026-09-11T06:33:21.383Z",
+      "finishedAt": "2026-09-11T06:39:00.285Z",
+      "fixture": {
+        "isolatedProfiles": true,
+        "targetProfileInitiallyEmpty": true,
+        "targetDebuggingPreconfigured": false,
+        "uiHarnessUsesSeparateMarionetteProfile": true
+      },
+      "checks": [
+        "actual Codex discovers the bundled MCP with global Node and PowerShell absent from PATH",
+        "Codex explicitly passes the isolated test scope before any mutation",
+        "opening connection UI performs no installation or profile preference writes",
+        "a single existing profile is selected without a path prompt",
+        "first Connect click shows real setup confirmation before any write",
+        "confirmation isolates background controls and starts with keyboard focus on approval",
+        "Tab stays inside the confirmation dialog",
+        "Escape cancels the preview and returns keyboard focus without applying settings",
+        "the dark 320px connection dialog fits without horizontal overflow",
+        "a fresh Zen welcome wizard is not falsely reported as a usable connection",
+        "first installation and connection finish through the actual UI without internal script execution",
+        "native host uses its own stable bundled runtime",
+        "only the explicit connection preference is added to user.js",
+        "the connection enables real trusted background input",
+        "closing the actual Codex app-server leaves the connected Zen running",
+        "restarting Codex rediscovers the same live browser without setup or a Zen restart"
+      ],
+      "confirmations": [
+        {
+          "stage": "first-connect",
+          "text": "确认连接 Zen\n\nZen 1.22b · 连接验收\n\n为当前 Windows 账户准备随包通信组件；不需要管理员权限或另装运行时。\n关闭 Firefox 的自动化偏好批量调整，避免它替你改变其他浏览器设置；此项可回滚。\n为所选 Zen 启用仅本机可访问的浏览器控制通道，并自动加载未签名扩展；不更改扩展签名校验。\n允许并连接\n返回",
+          "automatedClicks": [
+            "连接 Zen",
+            "允许并连接"
+          ]
+        },
+        {
+          "stage": "fresh-zen-onboarding",
+          "operator": "Codex Computer Use test operator",
+          "profileInitiallyEmpty": true,
+          "browserSetupClicks": 7,
+          "steps": [
+            "Start welcome",
+            "Next with No, start fresh selected",
+            "Next without changing workspace colors",
+            "Next with default search selection unchanged",
+            "Skip preset apps",
+            "Next with No, do not make Zen default selected",
+            "Dive in"
+          ],
+          "changedDefaultBrowser": false,
+          "importedBrowserData": false,
+          "changedThemeSelection": false,
+          "completionObserved": "Zen welcome wizard disappeared and normal browser tabs and the Zen welcome page were visible",
+          "testAutomationNotes": "One accessibility-index click did not change the page; refreshed screenshot coordinates were then used. This retry and separate connection UI QA are excluded from the required product click count.",
+          "additionalConnectionUiClick": "引导已完成，继续连接"
+        }
+      ],
+      "testRegistrationRestored": true,
+      "productionRegistrationUnchanged": true,
+      "otherBrowsersPreserved": true,
+      "passed": true,
+      "count": 16,
+      "localEvidenceDirectory": "connection-flow-1789108401382"
+    },
+    "zenIntegration": {
+      "mode": "headed-hidden",
+      "startedAt": "2026-09-11T06:11:22.002Z",
+      "finishedAt": "2026-09-11T06:11:43.018Z",
+      "checks": [
+        "Zen loads the real WebExtension",
+        "MCP starts from the shipped configuration",
+        "native messaging and authenticated local pipe connect",
+        "all 25 MCP tools are discoverable",
+        "AI tab is created in the background",
+        "controlled tab has a native group or an explicit title fallback",
+        "tab title displays a real AI state",
+        "page observation does not expose password values or control buttons",
+        "background DOM operations change the actual form and result",
+        "synthetic Enter retains real form submission semantics",
+        "background work preserves the other tab focus, text and selection",
+        "foreground typing continues while AI writes elsewhere",
+        "browser-generated editing events do not cause false takeover",
+        "open shadow DOM still works in the background",
+        "cross-origin frame observations and actions remain isolated",
+        "background screenshot contains the real controlled page",
+        "existing browser login session is retained",
+        "React controlled inputs still update application state",
+        "Windows foreground stays unchanged during background operations",
+        "clicking the AI tab enters watching without losing control",
+        "page control UI is isolated in a closed shadow root",
+        "physical hover does not take over",
+        "watched fill and click update the actual page",
+        "visible native editing events are attributed to the active AI operation",
+        "consecutive watched steps continue without a false takeover",
+        "Windows foreground stays unchanged during watching operations",
+        "running status is driven by an actual pending command",
+        "collapsed controls still expose pause and takeover",
+        "page pause cancels an outstanding wait",
+        "immediate Continue does not replay an already-queued write",
+        "Continue requires a fresh observation",
+        "actual page click and typing take over without swallowing user input",
+        "Continue wakes the waiting MCP call with a fresh observation of user edits",
+        "keyboard input alone takes over an AI-focused input",
+        "actual content drag takes over before further AI writes",
+        "physical input in a cross-origin iframe takes over the whole tab",
+        "tab marking preserves dynamic site titles",
+        "an actual failed operation produces a failed UI state",
+        "stale refs are rejected after a new observation",
+        "invalid target remains blocked: ELEMENT_DISABLED",
+        "invalid target remains blocked: ELEMENT_COVERED",
+        "invalid target remains blocked: NEW_TAB_LINK",
+        "invalid target remains blocked: UNSUPPORTED_FILE_INPUT",
+        "synthetic click does not claim trusted-only page behavior",
+        "agent-declared need for user action is displayed accurately",
+        "refresh preserves a human pause and restores the page controls",
+        "navigation invalidates old page observations",
+        "navigation and history rebuild the live UI and keep watching",
+        "a second MCP connection cannot control the watched tab",
+        "extension popup lists the real task and current state",
+        "global pause disconnects native control",
+        "native bridge reconnects with a new connection identity",
+        "reconnection and reattachment do not bypass the stopped state",
+        "explicit task completion retains the actual result page",
+        "completed is shown in the page and tab title",
+        "the native tab favicon reaches the completed state",
+        "native Zen tab group displays the actual completion state"
+      ],
+      "focusRuns": [
+        {
+          "phase": "background",
+          "samples": 45,
+          "uniqueForegroundWindows": 1,
+          "allHandlesNonzero": true
+        },
+        {
+          "phase": "watching",
+          "samples": 69,
+          "uniqueForegroundWindows": 1,
+          "allHandlesNonzero": true
+        }
+      ],
+      "registrationRestored": true,
+      "passed": true,
+      "count": 57,
+      "localEvidenceDirectory": "zen-1789107082001"
+    },
+    "nativeIntegration": {
+      "startedAt": "2026-09-11T05:57:28.473Z",
+      "finishedAt": "2026-09-11T06:00:38.186Z",
+      "checks": [
+        "production launcher automatically loads the unsigned extension",
+        "MCP discovers native mode from the launched browser",
+        "the actual MCP click produces trusted page behavior",
+        "native MCP input keeps its tab in the background",
+        "native typing replaces text with real keyboard input",
+        "native form input and submission update the application",
+        "native background work preserves front focus, text and selection",
+        "native events are not falsely classified as takeover",
+        "multiline fill remains literal and cannot press Enter to submit",
+        "native input binds to the exact iframe document",
+        "identical URLs cannot confuse native target identity",
+        "Windows foreground preserved during native-background",
+        "selecting the tab enters watching without changing ownership",
+        "watching retains control during trusted typing and Enter",
+        "continuous watched input remains owned and complete",
+        "Windows foreground preserved during native-watching",
+        "pause stops native typing before the remaining characters",
+        "Continue cannot replay an old queued native write",
+        "actual page input still takes over native mode",
+        "native drag reaches the page without a false takeover",
+        "another MCP connection cannot take the native tab",
+        "native completion retains the real result page",
+        "a restart automatically reloads the unsigned extension",
+        "restarting the same profile preserves its login session",
+        "native input reconnects after browser restart"
+      ],
+      "startupConfirmations": [
+        {
+          "stage": "browser-restart-window-startup",
+          "action": "Activated the exact isolated Zen window using Computer Use, then acknowledged the connection startup callback",
+          "operator": "Codex Computer Use test operator",
+          "window": 26087138,
+          "manualUserActionRequiredInProduct": true,
+          "extraProductActions": [
+            "click the Zen window",
+            "click Continue connection"
+          ]
+        }
+      ],
+      "focusRuns": [
+        {
+          "phase": "native-background",
+          "samples": 37,
+          "uniqueForegroundWindows": 1,
+          "allHandlesNonzero": true
+        },
+        {
+          "phase": "native-watching",
+          "samples": 22,
+          "uniqueForegroundWindows": 1,
+          "allHandlesNonzero": true
+        }
+      ],
+      "registrationRestored": true,
+      "testRegistrationRestored": true,
+      "productionRegistrationUnchanged": true,
+      "otherBrowsersPreserved": true,
+      "passed": true,
+      "count": 25,
+      "localEvidenceDirectory": "zen-native-1789106248472"
+    }
+  },
+  "methodology": {
+    "mcpApps": "Actual Codex app-server plus the shipped MCP App HTML inside an isolated browser host; desktop shell entrypoint schema verified in local Codex code. No automated Codex desktop-shell click claim.",
+    "localPage": "Actual Codex with enable_mcp_apps=false and no client UI capability. The production loopback page drives the same connection manager.",
+    "existingFixture": "An isolated already-initialized browser profile, a real ordinary tab and HttpOnly cookie; no bridge registration, remote control or extension at first plugin connection.",
+    "freshFixture": "An initially empty profile directory and a test-created profiles.ini entry. The actual Zen first-run wizard was completed through Computer Use; this does not claim the plugin creates profiles for a never-started Zen installation.",
+    "onboardingOperator": "Computer Use operator simulation, seven effective browser wizard clicks plus the connection UI Continue click. One ineffective accessibility-index click and separate dialog QA are not counted as required product actions.",
+    "nativeOperator": "The native restart run required activation of the exact isolated Zen window, explicitly recorded; not a zero-interaction startup claim.",
+    "noGlobalRuntime": "The actual MCP child ran with PATH restricted to Windows System32. Installed global Node or PowerShell commands were not available to it.",
+    "testHelpers": "Marionette and the native inspection adapter are test facilities, never exposed as production tools.",
+    "rawEvidence": "Complete local reports, logs and screenshots are retained in .artifacts and excluded from Git and release packages.",
+    "desktopConfigurationReads": "Profile catalog and relevant preference/session flags are read by the desktop helper; a differing caller-side catalog and a preference change after confirmation have regression coverage."
+  },
+  "clicksFromOpenConnectionPage": {
+    "firstConnection": 2,
+    "unchangedPreparedProfileAfterFullExit": 1,
+    "codexRestartWithZenStillRunning": 0,
+    "normallyStartedZenNeedsReviewedRestart": 2,
+    "windowActivationWhenRequired": {
+      "extraActions": 2,
+      "actions": [
+        "activate Zen window",
+        "click Continue connection"
+      ]
+    },
+    "freshWizardRun": {
+      "connectAndConfirm": 2,
+      "zenWizard": 7,
+      "continueConnection": 1,
+      "total": 10
+    },
+    "localPage": {
+      "additionalLinkClick": 1,
+      "newLinkNeededAfterCodexRestart": true
+    }
+  },
+  "claims": {
+    "bundledRuntime": true,
+    "initializationAndDiscoveryReadOnly": true,
+    "connectionUi": "MCP Apps plus a production local-page fallback",
+    "sameExistingProfile": true,
+    "sameLoginSession": true,
+    "aiOwnedBackgroundTabInExistingWindow": true,
+    "backgroundOperation": true,
     "watching": true,
     "pauseAndTakeover": true,
     "noAutomaticWriteReplay": true,
     "trustedInput": true,
-    "nativeInputScope": [
-      "click",
-      "keyboard",
-      "drag"
-    ],
-    "automaticTemporaryReloadWithLauncher": true,
-    "officialBrowserUi": false,
+    "automaticTemporaryReloadThroughConnectionUi": true,
+    "browserSurvivesCodexExit": true,
+    "officialPrivateBrowserEntry": false,
     "mozillaSigningWorkflow": false,
     "mozillaSigned": false,
-    "authenticodeSigned": false,
+    "helpersAuthenticodeSigned": false,
+    "bundledNodeAuthenticodeSigned": true,
     "dailyProfileModified": false
   },
+  "limits": [
+    "Windows x64 package; tested Zen 1.22b / Gecko 155.0.1 and Codex 0.153.4.",
+    "MCP Apps rendering depends on the client; the fallback is a browser local page, not the Codex desktop shell.",
+    "Some browser startups need actual window activation and an explicit Continue acknowledgement.",
+    "First-run browser setup belongs to Zen and remains visible; no automatic theme or default-browser choices.",
+    "The unsigned extension is temporary. A normally started profile can need a reviewed restart.",
+    "Existing 0.3 manual setup preferences remain user-owned; 0.4 rollback restores only its recorded changes.",
+    "No official private @Browser, browser chrome control, native file picker, uploads or closed shadow DOM.",
+    "Loopback BiDi has browser-level privileges; it is not an authenticated remote-web endpoint.",
+    "In-flight clicks or gestures cannot be undone. Unknown outcomes are never automatically retried.",
+    "No actual financial, email or publishing transactions were exercised.",
+    "No human pressing the exact same key simultaneously with native typing was arranged."
+  ],
   "sourceHashNormalization": "UTF-8 text with LF line endings",
   "sourceSha256": {
-    ".mcp.json": "eacb3fb7bba055e8a957ef7d94eec9b32f50df8bf6e44b451fe7d412a90671eb",
-    ".codex-plugin/plugin.json": "09fd3710c217af6be7d5dfc9f62b3a735c14c3ea44f8773aef0e8fc00ac4b49b",
-    "package.json": "3099bd94c7511194be2144b8378e4f2b2f3520b1025bd1d2e183aa159206afe1",
-    "package-lock.json": "5129c7148da640725181c953a8b019bbd53be3634cb7a0811f3808ca2b82129b",
-    "extension/background.js": "1444b403e3736e38d57152aa30094707bbc183a1f4d8ddc4dfa7a72a95115bfe",
+    ".codex-plugin/plugin.json": "1afa3631eaee1e44ce30b94ec3a553fe63bcbd8cf1e2f8037a50c3871373a477",
+    ".mcp.json": "75adf22d9e22d10dce503cdd2bf4b529bc72d1e6d147b656e25f6c4244521817",
+    "bin/manifest.json": "2803a5a8084b09720c7ff26097b7009fae6c35ce5f63ffcdd8f225bb62455fb3",
+    "extension/background.js": "9356e684f32f683f705df720c9605fadb4b591604a5b922205c9768feafffe79",
     "extension/content.js": "263c27706909fff7f306136cdf8f0f5e3d5b848e23f307e0e785dd7d89aa5fcd",
     "extension/control-state.js": "a32497e66a8a24e247e3f1f581451b6adc9da9ba423aa92cea69b30872bfee30",
     "extension/input-origin.js": "dde48067f0d746b191505e2166f093d8eb82ff9749e9df1f47823be92885fe3e",
-    "extension/manifest.json": "435f87927143c613b119be0710dff84a4fdad4716539d4320c4bf4caa9cbe1ce",
+    "extension/manifest.json": "8ed379a82925910ce8db50d7ad1930d8df4931376cc76484d00ba9278ad3391d",
     "extension/page-ui.js": "a90625cc44b3a9a83f381ab0df25d995f9ada11de29a54d5fbb7fcb7fb8b0ca7",
     "extension/popup.css": "12458ce8be54e7e7f285f1a83a8a526f933fa067edd563b1e635b3e38643e56b",
     "extension/popup.html": "1e07a691a307b6b22378d0e15836f1e4206a45e238da8db05826ab742836ccd5",
     "extension/popup.js": "f646500bf7d622202a3a3697a3c5b1eb463ddbb0345415a933dcb70f194d19bc",
-    "server/bidi.mjs": "0aa44cd8703ae758a3bb1318e7afe583845ff6d1a577030de9eef9d79183aa08",
-    "server/client.mjs": "8da6b8eb4f4c730c28a4cad190075e13c01282c6bfcb2d7a1d289b78df3554b5",
-    "server/launch-zen.mjs": "cfd442d783cce47a039569bff8b4ee63712f4995e4095b49409aaf2e3cc5abef",
-    "server/mcp.mjs": "e656b24e56b17d6421cc8dd54db0b3210fa53554e3819d1d7e7ee1200ffd0b8c",
-    "server/native-driver.mjs": "5ab1438bf233fcf1bdbf9a437af88704b3b9eb1bd235e960a1c2834acb0f3d78",
-    "server/native-host.mjs": "3139b63b5affd1eb86dab8edbbabf6349d02da8a8ca5f37094fff59cb44ee935",
-    "server/paths.mjs": "d45f55024ff8e18bb9e89bd4baa2c7143d35a2552440a97c24fd6f3e4fa09975",
-    "server/tools.mjs": "3fc8c6050604fad46d30950383020e378c7207586abeb00c9ad6a24916f7de7b",
-    "server/wire.mjs": "e0031df88a35d451c908bbd28765cb4d7def7172c61ebb7b4b32641d3b9c4623",
+    "package-lock.json": "165fa5ec14764febdabe2a4913cebf25cb1a0b9f2e15463d523916d7d42c5189",
+    "package.json": "833a2b5856804636112a7572d1d01f96be614155900a1ef544927a8db926c492",
+    "runtime/manifest.json": "d9b02a7991a1f4c7f36b230221e2dd937b5b4852aea33f03e58f729dd1be385d",
+    "scripts/build-windows.ps1": "449f8da99215499b910cc8d70a06b0df93dde5c74de23e835fef3bc421c08c06",
     "scripts/check-profile-idle.ps1": "86579a32bee4523a9c5c054aca67af8881fb6a32f7e8e99194760f16ab2857ab",
-    "scripts/check.mjs": "010d4e9be02a5cdf24ab8c4fc9117069e623366b2f8aa81cfbf13ed39aecd821",
+    "scripts/check.mjs": "4964e9446d6c7474bf7f48b5067028fe37e344ee1ce115f7816e0cb39bcc8a98",
     "scripts/configure-native-profile.ps1": "1494c3527d7337a287589535552aaf595ae948ba1da4e5b90de7cabfb19c1467",
     "scripts/doctor.ps1": "c29a02150c9639a468d2cbbab0c9dae0b90b3f35d1c04fbfdf71ca8811f2c90f",
     "scripts/install-host.ps1": "d1a40b9905a0af386f42f49573703120e6b493c18ede256bf9806f2dacba1c9e",
     "scripts/NativeLauncher.cs": "4c6238189a6aa999734b7c10a64f67a50784d68959190e2a592f811f37f3130a",
-    "scripts/package.mjs": "d384c4113bcf9466dcfe9724435641cc3292d7275b56c712c814218647d34eb4",
+    "scripts/package.mjs": "50f85715ed56d01c4273a540ed5371aea28cfe665a9d6bd3e316f9e71f856291",
     "scripts/PhysicalInputProbe.cs": "10b4055ab15263309b83ecea9ed06fdc24bef6fefd341975dd548909c61816a3",
     "scripts/start-zen.ps1": "abd240e209e164872ac112c17cc77158ffa864ddbc35121fdc4e28c4db19130a",
     "scripts/unregister-host.ps1": "ff2df070d5d7e066eeb5f3be5a0566a2c7578288bacbf27123ed7f1b8dc2b7bb",
+    "scripts/vendor-node.py": "39eda24866ea09078cf35ee861b27eec55695cd49ea6076a8720981b96a3a5aa",
     "scripts/verify-browser-process.ps1": "c71a3d3d96c92dfba666f29a72c45becc116c88ca8c9a3dc3fb9c067f456e019",
+    "scripts/ZenPlatform.cs": "ff634da9714e2f07625631c849c1ea395f0b59a6274735add539b527fa91c1a3",
+    "server/bidi.mjs": "0aa44cd8703ae758a3bb1318e7afe583845ff6d1a577030de9eef9d79183aa08",
+    "server/client.mjs": "5bf7b1c579f6ce18fe3d376ef33d66220a5bc893854b26670d62c8cae35bb731",
+    "server/connection-manager.mjs": "31d293066e856c3b291a8680328e6788a939ddcd9beb1367331cac9c0af7a802",
+    "server/connection-page.mjs": "531b014486099f88cc2c562c280e4753db9ce1c06829aa3f1bacc72a11188b66",
+    "server/connection-tools.mjs": "dfc22722c2f98e748bc8a2e194c959e79db414b1c07878aafad82b1c058ec3bc",
+    "server/launch-zen.mjs": "3b57b66da4cf6f53e4b1c9eb7ef068fb3b4fcaeb990316cf1d3f2a57ec050583",
+    "server/mcp.mjs": "1b2215ed8b96cd393e43c12a77aeda884812a58872e09dde16cff8fb8f9677cb",
+    "server/native-driver.mjs": "5ab1438bf233fcf1bdbf9a437af88704b3b9eb1bd235e960a1c2834acb0f3d78",
+    "server/native-host.mjs": "32b8950385f198178f17892dc172c7979a3e42fe1b0c9df70dc3fc713e4fe6aa",
+    "server/paths.mjs": "7797cbe7e248b8baa1b8bad7b93b26dd68a20e2523dabf43111631d81bcb610d",
+    "server/profiles.mjs": "439e4fd38c95101f9121bceb45e8d307a5ebc2a80c579e4ae75264ae8989d8e2",
+    "server/tools.mjs": "3fc8c6050604fad46d30950383020e378c7207586abeb00c9ad6a24916f7de7b",
+    "server/windows.mjs": "e985d0ab2b1a4b0dd1892d5bb65eb194df913b736d6e4dfdec5db0076b415793",
+    "server/wire.mjs": "e0031df88a35d451c908bbd28765cb4d7def7172c61ebb7b4b32641d3b9c4623",
+    "skills/zen-browser/SKILL.md": "a277679dd462888a2c41de0f7da7ceccaa45142e907090653673f9122ae503e8",
+    "tests/codex-client.mjs": "c5474d4f9630bbd77a034bd999c7953ab89044b01f779f840d6e177128c2bdfd",
+    "tests/connection-e2e.mjs": "70846c9dad2c02f91d2cba8aabbb3ff11dc940bddc65d89eccc8a8dee9ee2ad4",
+    "tests/connection-page.test.mjs": "345bb58a2a692df23bf3e062372226d7bf0eaf939b1a8a47aac2a7cd11f3dac9",
+    "tests/connection.test.mjs": "fa09221e894d5b3c5f32b83a6cb83816a7610a734784c431e51bd6b455125838",
     "tests/controller.test.mjs": "4d349bed6d7456ec52b21666703d37fa675284b8dc3d3cbeefd880b4d3e5b004",
+    "tests/fixtures/page.html": "951de28be64ba4f66b5cacd6601c0ab475a59775c4066deb955eb3465d44d1e9",
+    "tests/fixtures/react.jsx": "2dcdd4446bfa0e21e60328ee875807d8e5cf84750fea2878232fc920c9ccf932",
     "tests/focus-monitor.ps1": "d6921dec10fe7fa0ab8faa2b0fc256b920734dd55e0086115d9d0c241e25d8de",
     "tests/host.test.mjs": "ccdd620464374f1e3e4522aa0ed9a73b6a9f0045c59ecf9af58dd93eeef7960a",
     "tests/input-origin.test.mjs": "4e2081549e970a7a3c9581d270f5f4f433d1e5a980c137f52fd132b56bf2365b",
     "tests/marionette.mjs": "8c8f352904f7e2f26fc90b141dc831f14d5a42ccfae270334b645f31ef64e1bc",
-    "tests/mcp.test.mjs": "947e237e9e916951ff42c3ecc4d94a80211ef2f7b3e7399eeb27f0c207b5a09c",
+    "tests/mcp.test.mjs": "f0400c239c651bb3f2722e85e204ad17a4905f9602d41a6d1d7b5ef77a35491a",
     "tests/native-driver.test.mjs": "ce5ad2ec51c50e9f37af512b120284ee9d621e4893c6b6db246cfb33e437ff27",
     "tests/native-inspection-host.mjs": "c385eff30a1a380bfcabe734750beafc18d0136260d94236c8913a34465dc9ae",
     "tests/profile-setup.test.mjs": "e8f3ce9ac98aa9b24724b35e800c3a4ebe6ec39078b30204012be4bb59f6e9f4",
     "tests/wire.test.mjs": "423fa7a6c75520aad0dde837a92bb33e68894fd74a5767609fc5b292b8f018f8",
-    "tests/zen-e2e.mjs": "d499dc9328d6ac3e2ac99cc6b078b792d550f63934b9c4c7e9d38f07ef852dbb",
-    "tests/zen-native-e2e.mjs": "cd10c08c112b88e2d0d91ccb2854ec0901491a0003cc4e2e6b7cd175c314be92"
+    "tests/zen-e2e.mjs": "14f70d93cf6afa7bc1b3d52cfe6c2027a5e22c8329f8771e986669fc17a2a59a",
+    "tests/zen-native-e2e.mjs": "b69131b03bcd59d7e0de7ae7573799fcbca5bc2e3a48d949e9f3a09a3d192114",
+    "ui/connection.html": "0e6d8a107a6839c266c31d9efbaacbf56707a2b57c6284ee461c9cd43aa166a2"
   }
 }

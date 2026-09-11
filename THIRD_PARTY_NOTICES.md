@@ -33,3 +33,7 @@ workflow. The upstream license text is preserved at
 `plugins/mattpocock-engineering/LICENSE`.
 
 ReasonW6 is the packager of this Codex marketplace and is not the original author of the redistributed skills.
+
+## Node.js in Zen Browser
+
+The Zen Browser plugin redistributes the unmodified Node.js 24.21.0 Windows x64 executable and its complete upstream license. See [the plugin notices](plugins/zen-browser/THIRD_PARTY_NOTICES.md) for the distribution URL, hashes and license location.

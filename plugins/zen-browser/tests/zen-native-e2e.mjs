@@ -2,12 +2,14 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import net from 'node:net';
 import { randomUUID } from 'node:crypto';
-import { spawn, spawnSync } from 'node:child_process';
-import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
+import { spawn } from 'node:child_process';
+import { readFile, writeFile, mkdir, readdir, stat } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BidiConnection } from '../server/bidi.mjs';
 import { launchZen } from '../server/launch-zen.mjs';
+import { runPlatform } from '../server/windows.mjs';
+import { ConnectionManager } from '../server/connection-manager.mjs';
 import { LineDecoder, MAX_RESPONSE } from '../server/wire.mjs';
 
 const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
@@ -15,7 +17,7 @@ const run=path.join(root,'.artifacts','zen-native-'+Date.now()),profile=path.joi
 await mkdir(profile,{recursive:true});await mkdir(extension,{recursive:true});
 const checks=[],report={startedAt:new Date().toISOString(),checks,isolatedProfile:true};
 const check=(name,value)=>{assert.ok(value,name);checks.push(name);console.log('PASS '+name);};
-const prefs={'remote.prefs.recommended':false,'browser.tabs.warnOnClose':false,'browser.shell.checkDefaultBrowser':false,'browser.startup.page':0,'browser.startup.homepage':'about:blank','browser.aboutwelcome.enabled':false,'zen.welcome-screen.seen':true,'zen.welcome-screen.enabled':false,'datareporting.policy.dataSubmissionEnabled':false,'toolkit.telemetry.enabled':false};
+const prefs={'remote.prefs.recommended':false,'browser.tabs.warnOnClose':false,'browser.shell.checkDefaultBrowser':false,'browser.startup.page':3,'browser.startup.homepage':'about:blank','browser.aboutwelcome.enabled':false,'zen.welcome-screen.seen':true,'zen.welcome-screen.enabled':false,'datareporting.policy.dataSubmissionEnabled':false,'toolkit.telemetry.enabled':false};
 await writeFile(path.join(profile,'user.js'),Object.entries(prefs).map(([k,v])=>`user_pref(${JSON.stringify(k)},${JSON.stringify(v)});`).join('\n'));
 for(const file of await readdir(path.join(root,'extension'))){
   let content=await readFile(path.join(root,'extension',file));
@@ -33,11 +35,22 @@ const http=createServer((req,res)=>{
   else res.end(fixture);
 });
 await new Promise(r=>http.listen(0,'127.0.0.1',r));const base='http://127.0.0.1:'+http.address().port;
-let mcp,connectionId,inspection,launched,receipt,focus;
+let mcp,connectionId,inspection,launched,receipt,focus,worker;
+const initial=await runPlatform({action:'inspect',profiles:[],hostName:'io.github.reasonw6.zen_browser_test'});
+const productionBefore=(await runPlatform({action:'inspect',profiles:[]})).currentManifest;
 const logs=[];
 process.env.ZEN_TEST_INSPECT_PIPE='\\\\.\\pipe\\zen-native-test-'+randomUUID();
 process.env.ZEN_TEST_INSPECT_TOKEN=randomUUID();
-function ps(name,args){const r=spawnSync('pwsh.exe',['-NoProfile','-ExecutionPolicy','Bypass','-File',path.join(root,'scripts',name),...args],{encoding:'utf8',windowsHide:true});if(r.status!==0)throw new Error(r.stderr||r.stdout);return r.stdout;}
+async function idle(){const deadline=Date.now()+90000;while(Date.now()<deadline){if(!(await runPlatform({action:'profile-state',profile})).locked)return;await new Promise(r=>setTimeout(r,100));}throw Error('The isolated test browser did not close normally.');}
+let startupAcknowledgements=0;
+async function onWaitingForBrowser(details){
+  const file=path.join(run,'operator-startup-'+(++startupAcknowledgements)+'.json');
+  const current=(await runPlatform({action:'inspect',profiles:[profile]})).processes.find(item=>item.profile===profile);
+  console.log('OPERATOR_STARTUP '+JSON.stringify({file,reason:details.reason,pid:current?.pid,window:current?.window,profile}));
+  const deadline=Date.now()+180000;
+  while(Date.now()<deadline&&!await stat(file).then(()=>true,()=>false))await new Promise(r=>setTimeout(r,150));
+  const record=JSON.parse(await readFile(file,'utf8'));report.startupConfirmations||=[];report.startupConfirmations.push(record);
+}
 function client(){
   const child=spawn(process.execPath,[path.join(root,'server/mcp.mjs')],{cwd:root,env:{...process.env,ZEN_BRIDGE_HOME:home},windowsHide:true,stdio:['pipe','pipe','pipe']});
   const pending=new Map(),decoder=new LineDecoder(MAX_RESPONSE);let next=0;child.stderr.on('data',d=>logs.push(d.toString()));
@@ -66,12 +79,13 @@ async function screenshot(context,name){const r=await inspection.request('browsi
 async function startFocus(phase){const output=path.join(run,'focus-'+phase+'.json'),stop=path.join(run,'stop-'+phase);const child=spawn('pwsh.exe',['-NoProfile','-File',path.join(root,'tests/focus-monitor.ps1'),'-OutputFile',output,'-StopFile',stop],{windowsHide:true,stdio:'ignore'});focus={child,output,stop,phase};for(let i=0;i<80;i++){try{await readFile(output+'.ready');return;}catch{await new Promise(r=>setTimeout(r,50));}}throw new Error('Focus monitor not ready');}
 async function stopFocus(){if(!focus)return;await writeFile(focus.stop,'stop');if(focus.child.exitCode===null)await new Promise(r=>focus.child.once('exit',r));const samples=JSON.parse((await readFile(focus.output,'utf8')).replace(/^\uFEFF/,''));report.focusRuns||=[];const result={phase:focus.phase,samples:samples.length,handles:[...new Set(samples.map(s=>s.handle))]};report.focusRuns.push(result);focus=null;check('Windows foreground preserved during '+result.phase,samples.length>10&&samples.every(s=>s.handle!==0)&&result.handles.length===1);}
 try{
-  console.log(ps('install-host.ps1',['-InstallRoot',home,'-HostName','io.github.reasonw6.zen_browser_test']).trim());
-  receipt=path.join(home,(await readdir(home)).filter(n=>n.startsWith('install-')&&n.endsWith('.json')).at(-1));
-  const install=JSON.parse(await readFile(receipt,'utf8'));
+  const buildId=await new ConnectionManager({source:root,home}).buildId();
+  const install=await runPlatform({action:'install',source:root,home,hostName:'io.github.reasonw6.zen_browser_test',buildId},{timeoutMs:30000});
+  receipt=install.receipt;worker=install.platformPath;
   await writeFile(path.join(install.runtimePath,'native-host-core.mjs'),await readFile(path.join(install.runtimePath,'native-host.mjs')));
-  await writeFile(path.join(install.runtimePath,'native-host.mjs'),await readFile(path.join(root,'tests/native-inspection-host.mjs')));
-  launched=await launchZen({binary:process.env.ZEN_BINARY,profile,home,extension,hidden:true});report.launch={...launched};
+  const adapter=await readFile(path.join(root,'tests/native-inspection-host.mjs'),'utf8');
+  await writeFile(path.join(install.runtimePath,'native-host.mjs'),adapter.replace('process.env.ZEN_TEST_INSPECT_TOKEN',JSON.stringify(process.env.ZEN_TEST_INSPECT_TOKEN)).replace('process.env.ZEN_TEST_INSPECT_PIPE',JSON.stringify(process.env.ZEN_TEST_INSPECT_PIPE)));
+  launched=await launchZen({binary:process.env.ZEN_BINARY,profile,home,extension,worker,hidden:true,onWaitingForBrowser});report.launch={...launched};
   check('production launcher automatically loads the unsigned extension',launched.automaticTemporaryLoad);
   mcp=client();await mcp.rpc('initialize',{protocolVersion:'2025-11-25'});const status=await connected();
   check('MCP discovers native mode from the launched browser',status.connections[0].nativeInput);
@@ -137,8 +151,8 @@ try{
   await call('task',{tabId,outcome:'completed',message:'原生输入结果已核对'});await screenshot(ai,'native-completed.png');
   check('native completion retains the real result page',(await control(tabId)).state==='completed');
   await inspection.request('test.closeBrowser');inspection.close();inspection=null;
-  ps('check-profile-idle.ps1',['-ProfilePath',profile,'-TimeoutMs','30000']);
-  launched=await launchZen({binary:process.env.ZEN_BINARY,profile,home,extension,hidden:true});connectionId=undefined;await connected();
+  await idle();
+  launched=await launchZen({binary:process.env.ZEN_BINARY,profile,home,extension,worker,hidden:true,onWaitingForBrowser});connectionId=undefined;await connected();
   check('a restart automatically reloads the unsigned extension',true);
   const restored=(await call('open',{url:base+'/session'})).tabId;await call('wait',{tabId:restored,text:'原有会话仍在'});
   check('restarting the same profile preserves its login session',true);
@@ -151,6 +165,12 @@ finally{
   if(inspection){await inspection.request('test.closeBrowser',{},3000).catch(()=>{});inspection.close();}
   else if(launched){try{await inspect();await inspection.request('test.closeBrowser',{},3000);}catch{}finally{inspection?.close();}}
   mcp?.child.stdin.end();http.close();
-  if(receipt){try{ps('unregister-host.ps1',['-Receipt',receipt]);report.registrationRestored=true;}catch(error){report.registrationRestored=false;report.cleanupError=error.message;process.exitCode=1;}}
+  try{const info=(await runPlatform({action:'inspect',profiles:[profile]})).processes.find(item=>item.profile===profile);if(info){await runPlatform({action:'close-profile',profile,binary:info.binary,pid:info.pid,started:info.started},{timeoutMs:45000});await idle();}}catch(error){report.browserCleanupError=error.message;process.exitCode=1;}
+  if(receipt){try{await runPlatform({action:'restore-host',receipt,hostName:'io.github.reasonw6.zen_browser_test'});report.registrationRestored=true;}catch(error){report.registrationRestored=false;report.cleanupError=error.message;process.exitCode=1;}}
+  const after=await runPlatform({action:'inspect',profiles:[],hostName:'io.github.reasonw6.zen_browser_test'});
+  report.testRegistrationRestored=after.currentManifest===initial.currentManifest;
+  report.productionRegistrationUnchanged=(await runPlatform({action:'inspect',profiles:[]})).currentManifest===productionBefore;
+  report.otherBrowsersPreserved=initial.processes.every(before=>after.processes.some(item=>item.pid===before.pid&&item.started===before.started));
+  if(!report.testRegistrationRestored||!report.productionRegistrationUnchanged||!report.otherBrowsersPreserved)process.exitCode=1;
   report.finishedAt=new Date().toISOString();await writeFile(path.join(run,'report.json'),JSON.stringify(report,null,2));await writeFile(path.join(run,'mcp.log'),logs.join(''));console.log('Evidence: '+run);
 }

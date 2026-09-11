@@ -20,7 +20,7 @@ export class BridgeClient {
     const entries = await this.connections();
     const selected = params.connectionId ? entries.find(e => e.id === params.connectionId) : entries.length === 1 ? entries[0] : null;
     if (!selected) {
-      const error = new Error(entries.length ? 'Multiple Zen profiles are connected. Supply the connectionId from zen_status.' : 'Zen extension is not connected. Install the native host, load the extension, and enable its connection. Run scripts/doctor.ps1 for diagnostics.');
+      const error = new Error(entries.length ? 'Multiple Zen profiles are connected. Supply the connectionId from zen_status.' : 'Zen is not connected. Open zen_connection and use the Connect Zen page to review setup or reconnect; no installation scripts are needed.');
       error.code = entries.length ? 'CONNECTION_REQUIRED' : 'NOT_CONNECTED';
       throw error;
     }

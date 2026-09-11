@@ -172,7 +172,7 @@ class ZenController {
         if (this.enabled) this.retry = setTimeout(() => this.connect(), 3000);
       });
       this.api.runtime.getBrowserInfo().then(info => {
-        if (this.port === port) port.postMessage({ type: 'hello', version: 1, browser: info });
+        if (this.port === port) port.postMessage({ type: 'hello', version: 1, browser: info, extensionVersion: this.api.runtime.getManifest?.().version });
       }).catch(error => { this.lastError = error.message; port.disconnect(); });
       this.badge();
     } catch (error) {
@@ -553,7 +553,7 @@ class ZenController {
         this.store.records.delete(tab.id);
         result = { tabId: tab.id, closed: true };
       } else if (['click','fill','press','drag'].includes(command) && (p.engine === 'native' || command === 'drag' || (p.engine !== 'dom' && this.nativeAvailable && !literalDomFill))) {
-        if (!this.nativeAvailable) throw this.error('NATIVE_UNAVAILABLE', 'Use the supplied Zen launcher to enable native input. No DOM fallback was executed.');
+        if (!this.nativeAvailable) throw this.error('NATIVE_UNAVAILABLE', 'Open Connect Zen in Codex to enable native input. No DOM fallback was executed.');
         const prepared = await this.content('native_prepare', { ...p, action: command }, request, true);
         const { lease, plan } = prepared;
         await this.nativeInput(request, lease, plan);

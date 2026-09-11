@@ -161,7 +161,7 @@ async function startFocusMonitor(phase) {
 try {
   console.log(powershell('install-host.ps1', ['-InstallRoot', bridgeHome, '-HostName', 'io.github.reasonw6.zen_browser_test']).trim());
   receipt = path.join(bridgeHome, (await readdir(bridgeHome)).filter(n => /^install-.*\.json$/.test(n)).at(-1));
-  const args = ['--no-remote', '--profile', profile, '--marionette', '--remote-allow-system-access'];
+  const args = ['--new-instance', '--profile', profile, '--marionette', '--remote-allow-system-access'];
   if (process.env.ZEN_HEADED !== '1') args.push('--headless');
   browserProcess = spawn(zen, args, { windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'] });
   browserProcess.stdout.on('data', data => logs.push(data.toString())); browserProcess.stderr.on('data', data => logs.push(data.toString()));
@@ -179,12 +179,12 @@ try {
   await startFocusMonitor('background');
   mcp = startClient();
   const init = await mcp.rpc('initialize', { protocolVersion: '2025-11-25', clientInfo: { name: 'zen-e2e', version: '2' }, capabilities: {} });
-  check('MCP starts from the shipped configuration', init.serverInfo.version === '0.3.0');
+  check('MCP starts from the shipped configuration', init.serverInfo.version === '0.4.0');
   let status;
   for (let i = 0; i < 40; i++) { status = await call('status'); if (status.connected) break; await new Promise(resolve => setTimeout(resolve, 250)); }
   check('native messaging and authenticated local pipe connect', status.connected);
   connectionId = status.connections[0].connectionId;
-  check('all 20 MCP tools are discoverable', (await mcp.rpc('tools/list')).tools.length === 20);
+  check('all 25 MCP tools are discoverable', (await mcp.rpc('tools/list')).tools.length === 25);
   const beforeHandles = resultValue(await marionette.command('WebDriver:GetWindowHandles'));
   const opened = await call('open', { url: base + '/', taskTitle: 'Zen AI 观看与接管验收' });
   const tabId = opened.tabId;

@@ -118,7 +118,7 @@ codex plugin marketplace remove reasonw6-plugins
 
 ### Zen Browser Bridge
 
-后台操作真实 Zen 标签页，用户点进标签可以继续观看，实际输入或点击接管才停止 AI。0.3.0 新增 BiDi 可信点击、键盘输入、拖动，以及每次启动自动加载未签名扩展的配套启动器；不包含 Mozilla 签名流程。支持普通及 React 表单、iframe、open shadow DOM、后台截图和状态标识。它是独立 MCP 接入，官方私有 `@Browser` 入口仍不可用。原生模式需要明确选择配置并完成单项可回滚设置，详见 [安装说明](plugins/zen-browser/README.md)和[验证记录](plugins/zen-browser/docs/VALIDATION.md)。
+后台操作真实 Zen 标签页，用户点进标签可以继续观看，实际输入或点击接管才停止 AI。0.4.0 随包提供 Windows 运行时和 MCP，通过 Codex 连接页自动发现、确认设置、启动、加载扩展、重试与回滚，无需手动脚本。保留 BiDi 可信点击、键盘输入和拖动；临时扩展不包含 Mozilla 签名流程。支持普通及 React 表单、iframe、open shadow DOM、后台截图和状态标识。它是独立 MCP 接入，官方私有 `@Browser` 入口仍不可用。原生模式通过连接页确认可回滚设置，必要时正常重启或激活 Zen 窗口，详见 [安装说明](plugins/zen-browser/README.md)和[验证记录](plugins/zen-browser/docs/VALIDATION.md)。
 
 ## 避免重复加载
 

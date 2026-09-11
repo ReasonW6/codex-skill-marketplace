@@ -1,6 +1,6 @@
 {
   "name": "zen-browser",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Control background Zen Browser tabs through a local MCP server and Firefox extension.",
   "author": {
     "name": "ReasonW6",
@@ -12,16 +12,27 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "Zen Browser",
-    "shortDescription": "后台操作 Zen，随时观看、暂停、继续或接管。",
-    "longDescription": "在真实 Zen 标签页中后台工作，点进标签继续观看，随时暂停或接管。配套启动器自动加载未签名扩展，并提供真实网页点击、键盘和拖动；原生标签组、图标、页面边框与面板显示实际状态。保留当前配置的登录会话，需要完成本机宿主和原生模式设置。",
+    "shortDescription": "在 Codex 内连接 Zen，后台操作、观看与接管。",
+    "longDescription": "随包提供 Windows x64 运行时和本地 MCP。支持 Codex 内嵌连接页；其他客户端可点击本地页面完成相同确认。自动发现 Zen 与配置，准备组件、打开浏览器并加载扩展。使用真实登录会话，保留后台操作、可信输入、观看、暂停与接管；需要重启或激活窗口时明确提示，不强制结束浏览器。",
     "developerName": "ReasonW6",
     "category": "Productivity",
-    "capabilities": ["Read", "Write"],
+    "capabilities": [
+      "Read",
+      "Write"
+    ],
     "brandColor": "#356B58",
     "composerIcon": "./extension/icon.svg",
     "logo": "./extension/icon.svg",
-    "screenshots": ["./assets/zen-tab-state.png", "./assets/native-watching.png", "./assets/bridge-popup.png"],
-    "defaultPrompt": ["在 Zen 后台处理网页，我点进标签时继续执行，让我观看。", "帮我填写 Zen 网页表单；需要我处理时暂停并等待我继续。"]
+    "screenshots": [
+      "./assets/connection-ready.png",
+      "./assets/connection-confirmation.png",
+      "./assets/zen-tab-state.png",
+      "./assets/native-watching.png"
+    ],
+    "defaultPrompt": [
+      "连接 Zen",
+      "在 Zen 后台处理网页，我点进标签时继续执行，让我观看。"
+    ]
   },
   "mcpServers": "./.mcp.json"
 }

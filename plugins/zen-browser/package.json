@@ -1,6 +1,6 @@
 {
   "name": "@reasonw6/zen-browser",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "private": true,
   "type": "module",
   "description": "Local Codex MCP and Firefox WebExtension bridge for Zen Browser",

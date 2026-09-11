@@ -1,0 +1,20 @@
+[
+  {
+    "file": "zen-native-host.exe",
+    "source": "scripts/NativeLauncher.cs",
+    "sourceSha256": "4c6238189a6aa999734b7c10a64f67a50784d68959190e2a592f811f37f3130a",
+    "sha256": "d59fec0e50cb940422b023bc5a8acf1bf54750175d80ae0ab096f878751ab4d2"
+  },
+  {
+    "file": "zen-input-probe.exe",
+    "source": "scripts/PhysicalInputProbe.cs",
+    "sourceSha256": "10b4055ab15263309b83ecea9ed06fdc24bef6fefd341975dd548909c61816a3",
+    "sha256": "7a1f7616975a2b45228fab59574dad30e1297fd872a5f15d6447a0a77d50fe47"
+  },
+  {
+    "file": "zen-platform.exe",
+    "source": "scripts/ZenPlatform.cs",
+    "sourceSha256": "ff634da9714e2f07625631c849c1ea395f0b59a6274735add539b527fa91c1a3",
+    "sha256": "020fee6f54db4267e2341ee0f4b30c7b6ef6cc264a9bffaa103ec741b605ff5c"
+  }
+]
