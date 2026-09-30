@@ -26,7 +26,7 @@ The upstream license text is preserved at `plugins/taste-skill-suite/LICENSE`.
 - Copyright: Copyright (c) 2026 Matt Pocock
 - License: MIT
 - Packaged plugin: `plugins/mattpocock-engineering`
-- Snapshot commit: `6654f6b60cd9d5be8b54c6fafe44346dabeb3b76`
+- Snapshot commit: `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`
 
 The plugin contains nine upstream engineering skills plus the `grilling`
 workflow. The upstream license text is preserved at
