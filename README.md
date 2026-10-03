@@ -4,7 +4,6 @@
 
 - `gsap-skills`：来自 [GreenSock 官方 GSAP Skills](https://github.com/greensock/gsap-skills)，包含 8 个 GSAP 动画工程 Skill。
 - `taste-skill-suite`：来自 [Leonxlnx/taste-skill](https://github.com/Leonxlnx/taste-skill)，包含 13 个前端与视觉设计 Skill。
-- `mattpocock-engineering`：来自 [Matt Pocock Skills](https://github.com/mattpocock/skills)，包含 9 个工程 Skill 和 `grilling` 工作流。
 - `zen-browser`：本仓库开发的 [Zen Browser Bridge](plugins/zen-browser/README.md)，在真实 Zen 标签页中后台读取、填表、点击、导航和截图；支持原生标签标记、点进观看，以及暂停、继续、接管和完成状态。
 
 上游 Skill 内容及版权归各自作者所有，详情见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)。`zen-browser` 为独立开发的 MIT 插件，其安装步骤、已验证能力和限制见插件目录。
@@ -31,7 +30,6 @@ https://github.com/ReasonW6/codex-skill-marketplace.git
 
 - **GSAP Skills**
 - **Taste Skill Suite**
-- **Matt Pocock Engineering**
 - **Zen Browser**（需同时安装配套 Zen 扩展和本机宿主，当前 XPI 为未签名开发包）
 
 ## 使用命令行添加（备用）
@@ -101,21 +99,6 @@ codex plugin marketplace remove reasonw6-plugins
 - `imagegen-frontend-mobile`
 - `brandkit`
 
-### Matt Pocock Engineering
-
-- `grilling`
-- `prototype`
-- `research`
-- `domain-modeling`
-- `codebase-design`
-- `tdd`
-- `diagnosing-bugs`
-- `code-review`
-- `resolving-merge-conflicts`
-- `wizard`
-
-该插件打包上游 9 个不需要修改调用元数据的工程 Skill，并保留 `grilling` 工作流。未包含另外 9 个需要兼容性改动的工程 Skill，以及 `in-progress`、`deprecated`、`misc` 和其他通用生产力 Skill。
-
 ### Zen Browser Bridge
 
 后台操作真实 Zen 标签页，用户点进标签可以继续观看，实际输入或点击接管才停止 AI。0.4.0 随包提供 Windows 运行时和 MCP，通过 Codex 连接页自动发现、确认设置、启动、加载扩展、重试与回滚，无需手动脚本。保留 BiDi 可信点击、键盘输入和拖动；临时扩展不包含 Mozilla 签名流程。支持普通及 React 表单、iframe、open shadow DOM、后台截图和状态标识。它是独立 MCP 接入，官方私有 `@Browser` 入口仍不可用。原生模式通过连接页确认可回滚设置，必要时正常重启或激活 Zen 窗口，详见 [安装说明](plugins/zen-browser/README.md)和[验证记录](plugins/zen-browser/docs/VALIDATION.md)。
@@ -134,9 +117,6 @@ codex plugin marketplace remove reasonw6-plugins
     │   ├── .codex-plugin/plugin.json
     │   └── skills/
     ├── taste-skill-suite/
-    │   ├── .codex-plugin/plugin.json
-    │   └── skills/
-    ├── mattpocock-engineering/
     │   ├── .codex-plugin/plugin.json
     │   └── skills/
     └── zen-browser/

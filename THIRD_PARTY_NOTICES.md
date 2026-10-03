@@ -1,6 +1,6 @@
 # Third-party notices
 
-This repository redistributes unmodified skill snapshots from three MIT-licensed upstream projects and adds Codex plugin manifests, marketplace metadata, and installation documentation.
+This repository redistributes unmodified skill snapshots from two MIT-licensed upstream projects and adds Codex plugin manifests, marketplace metadata, and installation documentation.
 
 ## GSAP Skills
 
@@ -19,18 +19,6 @@ The upstream license text is preserved at `plugins/gsap-skills/LICENSE`.
 - Packaged plugin: `plugins/taste-skill-suite`
 
 The upstream license text is preserved at `plugins/taste-skill-suite/LICENSE`.
-
-## Matt Pocock Engineering Skills
-
-- Upstream: https://github.com/mattpocock/skills
-- Copyright: Copyright (c) 2026 Matt Pocock
-- License: MIT
-- Packaged plugin: `plugins/mattpocock-engineering`
-- Snapshot commit: `d81f3a183412e71a5b1e84ca21bc1a35eea03a60`
-
-The plugin contains nine upstream engineering skills plus the `grilling`
-workflow. The upstream license text is preserved at
-`plugins/mattpocock-engineering/LICENSE`.
 
 ReasonW6 is the packager of this Codex marketplace and is not the original author of the redistributed skills.
 
